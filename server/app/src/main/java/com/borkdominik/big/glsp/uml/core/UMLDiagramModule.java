@@ -25,6 +25,7 @@ import com.borkdominik.big.glsp.uml.core.handler.operation.copy_paste.UMLPasteOp
 import com.borkdominik.big.glsp.uml.core.model.UMLModelMigrator;
 import com.borkdominik.big.glsp.uml.core.model.UMLModelRepresentation;
 import com.borkdominik.big.glsp.uml.core.model.UMLSourceModelStorage;
+import com.borkdominik.big.glsp.uml.core.model.ProfileService;
 import com.google.inject.Singleton;
 
 public class UMLDiagramModule extends BGEMFDiagramModule {
@@ -34,6 +35,7 @@ public class UMLDiagramModule extends BGEMFDiagramModule {
       super.configureAdditionals();
 
       bind(UMLModelMigrator.class).in(Singleton.class);
+      bind(ProfileService.class).in(Singleton.class);
    }
 
    @Override

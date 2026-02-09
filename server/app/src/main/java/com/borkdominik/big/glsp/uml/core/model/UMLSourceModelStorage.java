@@ -39,6 +39,9 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
    @Inject
    protected UMLModelMigrator migrator;
 
+   @Inject
+   protected ProfileService profileService;
+
    @Override
    protected ResourceSet setupResourceSet(final ResourceSet resourceSet) {
       super.setupResourceSet(resourceSet);
@@ -53,6 +56,41 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
       migrator.migrateNotationModel(resourceSet, deriveNotationModelURI(sourceURI), action);
 
       super.loadNotationModel(resourceSet, sourceURI, action);
+
+      // Load and apply UML profiles after model is loaded
+      loadAndApplyProfiles(resourceSet, sourceURI);
+   }
+
+   /**
+    * Discovers and applies UML profiles from the model directory.
+    */
+   protected void loadAndApplyProfiles(ResourceSet resourceSet, URI sourceURI) {
+      var profileUris = profileService.discoverProfileUris(sourceURI);
+
+      if (profileUris.isEmpty()) {
+         return;
+      }
+
+      // Get the UML model from the resource set
+      var umlResource = resourceSet.getResource(sourceURI, false);
+      if (umlResource == null || umlResource.getContents().isEmpty()) {
+         return;
+      }
+
+      var rootElement = umlResource.getContents().stream()
+            .filter(e -> e instanceof Model)
+            .map(e -> (Model) e)
+            .findFirst()
+            .orElse(null);
+
+      if (rootElement != null) {
+         for (var profileUri : profileUris) {
+            var profile = profileService.loadProfile(profileUri, resourceSet);
+            if (profile != null) {
+               profileService.applyProfile(rootElement, profile);
+            }
+         }
+      }
    }
 
    @Override

@@ -14,12 +14,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.uml2.uml.Element;
 import org.eclipse.uml2.uml.Package;
 import org.eclipse.uml2.uml.Profile;
 import org.eclipse.uml2.uml.Stereotype;
@@ -61,14 +63,13 @@ public class ProfileService {
             return profileUris;
         }
 
-        // Find all *.profile.uml files in the directory
+        // Check only the model directory as per user requirement
         File[] profileFiles = modelDir.listFiles((dir, name) -> name.endsWith(PROFILE_EXTENSION));
-
-        if (profileFiles != null) {
+        if (profileFiles != null && profileFiles.length > 0) {
             for (File profileFile : profileFiles) {
                 URI profileUri = URI.createFileURI(profileFile.getAbsolutePath());
                 profileUris.add(profileUri);
-                LOGGER.info("Discovered profile: " + profileFile.getName());
+                LOGGER.info("Discovered profile: " + profileFile.getName() + " in " + modelDir.getAbsolutePath());
             }
         }
 
@@ -94,8 +95,29 @@ public class ProfileService {
             var root = resource.getContents().get(0);
             if (root instanceof Profile) {
                 Profile profile = (Profile) root;
-                loadedProfiles.add(profile);
-                LOGGER.info("Loaded profile: " + profile.getName() + " from " + profileUri);
+
+                // Register the Ecore packages from the profile's annotations
+                // These are needed for UML2 to recognize stereotypes as applicable
+                registerProfileEcorePackages(profile, resourceSet);
+
+                // Define the profile if not already defined
+                if (!profile.isDefined()) {
+                    LOGGER.info("Profile '" + profile.getName() + "' is not defined, attempting define()...");
+                    try {
+                        profile.define();
+                        LOGGER.info("Successfully defined profile: " + profile.getName());
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Could not define profile '" + profile.getName() +
+                                "': " + e.getMessage());
+                    }
+                } else {
+                    LOGGER.info("Profile '" + profile.getName() + "' is already defined");
+                }
+
+                // loadedProfiles.add(profile); // REMOVED: Do not store stateful profiles in
+                // Singleton
+                LOGGER.info("Loaded profile: " + profile.getName() + " from " + profileUri +
+                        " (isDefined: " + profile.isDefined() + ")");
                 logAvailableStereotypes(profile);
                 return profile;
             } else {
@@ -105,6 +127,32 @@ public class ProfileService {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error loading profile: " + profileUri, e);
             return null;
+        }
+    }
+
+    /**
+     * Registers the Ecore packages embedded in a profile's annotations.
+     * UML2 profiles contain their Ecore definition inside EAnnotations with
+     * source "http://www.eclipse.org/uml2/2.0.0/UML". These must be registered
+     * in the EPackage.Registry for stereotype application to work.
+     */
+    private void registerProfileEcorePackages(Profile profile, ResourceSet resourceSet) {
+        for (var annotation : profile.getEAnnotations()) {
+            if ("http://www.eclipse.org/uml2/2.0.0/UML".equals(annotation.getSource())) {
+                for (var content : annotation.getContents()) {
+                    if (content instanceof org.eclipse.emf.ecore.EPackage) {
+                        var ePackage = (org.eclipse.emf.ecore.EPackage) content;
+                        String nsURI = ePackage.getNsURI();
+                        if (nsURI != null && !nsURI.isEmpty()) {
+                            // Register in both global and resource set registries
+                            org.eclipse.emf.ecore.EPackage.Registry.INSTANCE.put(nsURI, ePackage);
+                            resourceSet.getPackageRegistry().put(nsURI, ePackage);
+                            LOGGER.info("Registered Ecore package: " + ePackage.getName() +
+                                    " (nsURI: " + nsURI + ")");
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -138,10 +186,80 @@ public class ProfileService {
     }
 
     /**
-     * Gets all stereotypes available from loaded profiles.
+     * Finds a stereotype by its qualified name in the given ResourceSet.
+     * Use this stateless method instead of findStereotype(String).
      * 
+     * @param resourceSet   The ResourceSet containing keys
+     * @param qualifiedName The qualified name or simple name of the stereotype
+     * @return The stereotype if found, empty otherwise
+     */
+    public Optional<Stereotype> findStereotype(ResourceSet resourceSet, String qualifiedName) {
+        if (resourceSet == null) {
+            return Optional.empty();
+        }
+
+        for (Resource resource : resourceSet.getResources()) {
+            if (resource.getContents().isEmpty())
+                continue;
+
+            var root = resource.getContents().get(0);
+            if (root instanceof Profile) {
+                Profile profile = (Profile) root;
+                for (Stereotype stereotype : profile.getOwnedStereotypes()) {
+                    if (stereotype.getQualifiedName() != null &&
+                            stereotype.getQualifiedName().equals(qualifiedName)) {
+                        return Optional.of(stereotype);
+                    }
+                    // Also try matching by name only (for simpler lookups)
+                    if (stereotype.getName() != null && stereotype.getName().equals(qualifiedName)) {
+                        return Optional.of(stereotype);
+                    }
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets all stereotypes available from profiles loaded in the given ResourceSet.
+     * Use this stateless method instead of getAvailableStereotypes().
+     * 
+     * @param resourceSet The ResourceSet containing the model and profiles
      * @return List of available stereotypes
      */
+    public List<Stereotype> getAvailableStereotypes(ResourceSet resourceSet) {
+        List<Stereotype> stereotypes = new ArrayList<>();
+        if (resourceSet == null) {
+            return stereotypes;
+        }
+
+        java.util.Set<String> seenStereotypes = new java.util.HashSet<>();
+
+        for (Resource resource : resourceSet.getResources()) {
+            if (resource.getContents().isEmpty()) {
+                continue;
+            }
+            var root = resource.getContents().get(0);
+            if (root instanceof Profile) {
+                for (Stereotype s : ((Profile) root).getOwnedStereotypes()) {
+                    String qName = s.getQualifiedName();
+                    if (qName != null) {
+                        if (seenStereotypes.add(qName)) {
+                            stereotypes.add(s);
+                        }
+                    } else {
+                        stereotypes.add(s);
+                    }
+                }
+            }
+        }
+        return stereotypes;
+    }
+
+    /**
+     * @deprecated Use the stateless getAvailableStereotypes(ResourceSet) instead.
+     */
+    @Deprecated
     public List<Stereotype> getAvailableStereotypes() {
         List<Stereotype> stereotypes = new ArrayList<>();
         for (Profile profile : loadedProfiles) {
@@ -151,10 +269,9 @@ public class ProfileService {
     }
 
     /**
-     * Gets the list of currently loaded profiles.
-     * 
-     * @return Unmodifiable list of loaded profiles
+     * @deprecated Use ResourceSet iteration instead.
      */
+    @Deprecated
     public List<Profile> getLoadedProfiles() {
         return Collections.unmodifiableList(loadedProfiles);
     }
@@ -164,6 +281,51 @@ public class ProfileService {
      */
     public void clearProfiles() {
         loadedProfiles.clear();
+    }
+
+    /**
+     * Finds a stereotype by its qualified name across all loaded profiles.
+     * 
+     * @param qualifiedName The qualified name of the stereotype (e.g.,
+     *                      "uml-vm-profile::delta")
+     * @return The stereotype if found, empty otherwise
+     */
+    public Optional<Stereotype> findStereotype(String qualifiedName) {
+        for (Profile profile : loadedProfiles) {
+            for (Stereotype stereotype : profile.getOwnedStereotypes()) {
+                if (stereotype.getQualifiedName() != null &&
+                        stereotype.getQualifiedName().equals(qualifiedName)) {
+                    return Optional.of(stereotype);
+                }
+                // Also try matching by name only (for simpler lookups)
+                if (stereotype.getName() != null && stereotype.getName().equals(qualifiedName)) {
+                    return Optional.of(stereotype);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets stereotypes that are applicable to the given element.
+     * A stereotype is applicable if it can be legally applied based on
+     * its metaclass extensions.
+     * 
+     * @param element The element to check applicability for
+     * @return List of applicable stereotypes
+     */
+    public List<Stereotype> getApplicableStereotypes(Element element) {
+        List<Stereotype> applicable = new ArrayList<>();
+        for (Stereotype stereotype : getAvailableStereotypes()) {
+            try {
+                if (element.isStereotypeApplicable(stereotype)) {
+                    applicable.add(stereotype);
+                }
+            } catch (Exception e) {
+                LOGGER.fine("Error checking stereotype applicability: " + stereotype.getName());
+            }
+        }
+        return applicable;
     }
 
     /**

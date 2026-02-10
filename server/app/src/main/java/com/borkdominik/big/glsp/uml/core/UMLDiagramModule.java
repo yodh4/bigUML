@@ -58,6 +58,8 @@ public class UMLDiagramModule extends BGEMFDiagramModule {
       super.configureOperationHandlers(bindings);
       bindings.rebind(BGEMFChangeBoundsOperationHandler.class, UMLChangeBoundsOperationHandler.class);
       bindings.rebind(BGEMFPasteOperationHandler.class, UMLPasteOperationHandler.class);
+      // Note: Stereotype apply/remove is handled via
+      // StereotypePropertyProvider.doHandle()
    }
 
    @Override

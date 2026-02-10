@@ -21,6 +21,7 @@ import com.borkdominik.big.glsp.uml.uml.elements.attribute_owner.AttributeOwnerP
 import com.borkdominik.big.glsp.uml.uml.elements.class_.features.ClassPropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.class_.gmodel.ClassGModelMapper;
 import com.borkdominik.big.glsp.uml.uml.elements.classifier.ClassifierPropertyProvider;
+import com.borkdominik.big.glsp.uml.uml.elements.element.features.StereotypePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.NamedElementLabelEditHandler;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.NamedElementPropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.operation_owner.OperationOwnerPropertyProvider;
@@ -37,11 +38,12 @@ public class ClassElementManifest extends BGEMFNodeElementManifest {
       bindCreateHandler(ClassOperationHandler.class);
       bindEditLabel(Set.of(NamedElementLabelEditHandler.class));
       bindPropertyPalette(BGPropertyPaletteContribution.Options.builder()
-         .propertyProviders(Set.of(
-            NamedElementPropertyProvider.class,
-            ClassifierPropertyProvider.class,
-            ClassPropertyProvider.class,
-            AttributeOwnerPropertyProvider.class,
-            OperationOwnerPropertyProvider.class)));
+            .propertyProviders(Set.of(
+                  NamedElementPropertyProvider.class,
+                  ClassifierPropertyProvider.class,
+                  ClassPropertyProvider.class,
+                  AttributeOwnerPropertyProvider.class,
+                  OperationOwnerPropertyProvider.class,
+                  StereotypePropertyProvider.class)));
    }
 }

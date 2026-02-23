@@ -1,0 +1,26 @@
+package com.borkdominik.big.glsp.uml.converter.cli;
+
+public enum CliErrorCode {
+    NONE(""),
+    CLI_MISSING_REQUIRED_ARGUMENT("E-CLI-001"),
+    CLI_UNKNOWN_ARGUMENT("E-CLI-002"),
+    CLI_INVALID_ARGUMENT_VALUE("E-CLI-003"),
+    PREFLIGHT_INPUT_NOT_FOUND("E-PREFLIGHT-001"),
+    PREFLIGHT_INPUT_NOT_UML("E-PREFLIGHT-002"),
+    PREFLIGHT_OUTPUT_DIR_MISSING("E-PREFLIGHT-003"),
+    PREFLIGHT_OUTPUT_NOT_WRITABLE("E-PREFLIGHT-004"),
+    PREFLIGHT_INPUT_OUTPUT_SAME("E-PREFLIGHT-005"),
+    PREFLIGHT_PROFILE_NOT_FOUND("E-PREFLIGHT-006"),
+    IO_OUTPUT_WRITE_FAILED("E-IO-001"),
+    IO_REPORT_WRITE_FAILED("E-IO-002");
+
+    private final String code;
+
+    CliErrorCode(String code) {
+        this.code = code;
+    }
+
+    public String getCode() {
+        return code;
+    }
+}

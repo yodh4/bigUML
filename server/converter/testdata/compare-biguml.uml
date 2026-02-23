@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ASCII"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmlns:umlvmprofile="http:///schemas/umlvmprofile/_WVUGgHBcEe2xjuUrq2IPfA/2">
+  <uml:Model xmi:id="_vTtU0A-3EfGVOptiA-IdgQ">
+    <packagedElement xsi:type="uml:Package" xmi:id="_MH2OkA-4EfGVOptiA-IdgQ" name="Account">
+      <packagedElement xsi:type="uml:Package" xmi:id="_tBPGcA-4EfGVOptiA-IdgQ" name="MAccount">
+        <packagedElement xsi:type="uml:Interface" xmi:id="_vyqFMA-4EfGVOptiA-IdgQ" name="Account"/>
+        <packagedElement xsi:type="uml:Class" xmi:id="_75zdMA-4EfGVOptiA-IdgQ" name="AccountImpl">
+          <ownedAttribute xmi:id="_BIDDsA-5EfGVOptiA-IdgQ" name="id" visibility="protected" type="_ERGfUA-5EfGVOptiA-IdgQ">
+            <lowerValue xsi:type="uml:LiteralInteger" xmi:id="_BIER0A-5EfGVOptiA-IdgQ" value="1"/>
+            <upperValue xsi:type="uml:LiteralUnlimitedNatural" xmi:id="_BIHVIA-5EfGVOptiA-IdgQ" value="1"/>
+          </ownedAttribute>
+          <ownedAttribute xmi:id="_JkS3QA-5EfGVOptiA-IdgQ" name="balance" visibility="protected" type="_ERGfUA-5EfGVOptiA-IdgQ">
+            <lowerValue xsi:type="uml:LiteralInteger" xmi:id="_JkS3QQ-5EfGVOptiA-IdgQ" value="1"/>
+            <upperValue xsi:type="uml:LiteralUnlimitedNatural" xmi:id="_JkTeUA-5EfGVOptiA-IdgQ" value="1"/>
+          </ownedAttribute>
+          <interfaceRealization xmi:id="_TxJFwA-5EfGVOptiA-IdgQ" client="_75zdMA-4EfGVOptiA-IdgQ" supplier="_vyqFMA-4EfGVOptiA-IdgQ" contract="_vyqFMA-4EfGVOptiA-IdgQ"/>
+          <ownedOperation xmi:id="_L2MBYA-5EfGVOptiA-IdgQ" name="update">
+            <ownedParameter xmi:id="_NzUccA-5EfGVOptiA-IdgQ" name="x" type="_ERGfUA-5EfGVOptiA-IdgQ"/>
+            <ownedParameter xmi:id="_Qh2fQA-5EfGVOptiA-IdgQ" name="" type="_Fe4hEA-5EfGVOptiA-IdgQ" direction="return"/>
+          </ownedOperation>
+        </packagedElement>
+        <profileApplication xmi:id="_ugvxYA-4EfGVOptiA-IdgQ">
+          <eAnnotations xmi:id="_ugwYcA-4EfGVOptiA-IdgQ" source="http://www.eclipse.org/uml2/2.0.0/UML">
+            <references href="file:/c:/Users/cyril/OneDrive/Desktop/sem-8/uml/compare/uml-vm-profile.profile.uml#_WVVUoHBcEe2xjuUrq2IPfA"/>
+          </eAnnotations>
+          <appliedProfile href="file:/c:/Users/cyril/OneDrive/Desktop/sem-8/uml/compare/uml-vm-profile.profile.uml#_XI61gJkHEeyPP7xacetQkQ"/>
+        </profileApplication>
+      </packagedElement>
+      <profileApplication xmi:id="_qkCEMA-4EfGVOptiA-IdgQ">
+        <eAnnotations xmi:id="_qkGVoA-4EfGVOptiA-IdgQ" source="http://www.eclipse.org/uml2/2.0.0/UML">
+          <references href="file:/c:/Users/cyril/OneDrive/Desktop/sem-8/uml/compare/uml-vm-profile.profile.uml#_WVVUoHBcEe2xjuUrq2IPfA"/>
+        </eAnnotations>
+        <appliedProfile href="file:/c:/Users/cyril/OneDrive/Desktop/sem-8/uml/compare/uml-vm-profile.profile.uml#_XI61gJkHEeyPP7xacetQkQ"/>
+      </profileApplication>
+    </packagedElement>
+    <packagedElement xsi:type="uml:PrimitiveType" xmi:id="_ERGfUA-5EfGVOptiA-IdgQ" name="Integer"/>
+    <packagedElement xsi:type="uml:PrimitiveType" xmi:id="_Fe4hEA-5EfGVOptiA-IdgQ" name="Boolean"/>
+  </uml:Model>
+  <umlvmprofile:vm xmi:id="_qkZ3oA-4EfGVOptiA-IdgQ" base_Package="_MH2OkA-4EfGVOptiA-IdgQ"/>
+  <umlvmprofile:module xmi:id="_ugxmkA-4EfGVOptiA-IdgQ" base_Package="_tBPGcA-4EfGVOptiA-IdgQ"/>
+</xmi:XMI>

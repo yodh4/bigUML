@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'dev.equo.p2deps' version '1.7.7'
+}
+
+repositories {
+    mavenCentral()
+}
+
+p2deps {
+    into('implementation') {
+        p2repo('https://download.eclipse.org/releases/2023-09/202309131000/')
+        install('org.eclipse.uml2.uml')
+    }
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+application {
+    mainClass = 'com.borkdominik.big.glsp.uml.converter.cli.ConverterCli'
+}

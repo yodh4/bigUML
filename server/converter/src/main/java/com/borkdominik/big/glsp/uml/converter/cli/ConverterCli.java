@@ -4,6 +4,8 @@ import com.borkdominik.big.glsp.uml.converter.report.ConversionReport;
 import com.borkdominik.big.glsp.uml.converter.report.ConversionReportWriter;
 import com.borkdominik.big.glsp.uml.converter.service.PreflightResult;
 import com.borkdominik.big.glsp.uml.converter.service.PreflightService;
+import com.borkdominik.big.glsp.uml.converter.service.ProfileMetadataException;
+import com.borkdominik.big.glsp.uml.converter.service.ProfileMetadataResolver;
 import com.borkdominik.big.glsp.uml.converter.service.StubConverter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -12,7 +14,7 @@ import java.time.Instant;
 public final class ConverterCli {
     public static final String TOOL_NAME = "biguml-uml2winvmj-converter";
     public static final String TOOL_VERSION = "0.1.0";
-    public static final String STAGE = "0";
+    public static final String STAGE = "1";
 
     public static void main(String[] args) {
         ConverterCli cli = new ConverterCli();
@@ -62,6 +64,19 @@ public final class ConverterCli {
             if (!preflight.isOk()) {
                 report = report.failed(preflight.getErrorCode().getCode(), preflight.getMessage());
                 return writeReportAndExit(report, errorWriter, preflight.getErrorCode());
+            }
+
+            try {
+                ProfileMetadataResolver resolver = new ProfileMetadataResolver();
+                ProfileMetadataResolver.ResolutionResult resolution = resolver.resolve(profilePath);
+                report = report.withMetadata(resolution.getMetadata());
+                report = report.withWarnings(resolution.getWarnings());
+            } catch (ProfileMetadataException resolveError) {
+                report = report.failed(resolveError.getErrorCode().getCode(), resolveError.getMessage());
+                return writeReportAndExit(report, errorWriter, resolveError.getErrorCode());
+            } catch (Exception resolveError) {
+                report = report.failed(CliErrorCode.RESOLVE_PROFILE_INVALID.getCode(), resolveError.getMessage());
+                return writeReportAndExit(report, errorWriter, CliErrorCode.RESOLVE_PROFILE_INVALID);
             }
 
             try {

@@ -4,6 +4,6 @@ plugins {
 
 rootProject.name = 'com.borkdominik.big.glsp.uml'
 include 'app'
+include 'converter'
 include 'model'
 include 'platform'
-

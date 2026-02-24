@@ -1,5 +1,6 @@
 package com.borkdominik.big.glsp.uml.converter.report;
 
+import com.borkdominik.big.glsp.uml.converter.report.ProfileMetadata;
 import com.borkdominik.big.glsp.uml.converter.service.PreflightCheck;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -76,6 +77,35 @@ public final class ConversionReportWriter {
                     .append(valueOrDash(check.getDetail()))
                     .append(System.lineSeparator());
             }
+        }
+        builder.append(System.lineSeparator());
+
+        builder.append("## Metadata Resolver").append(System.lineSeparator());
+        ProfileMetadata metadata = report.getMetadata();
+        if (metadata == null || metadata.getProfileRootId() == null || metadata.getEpackageId() == null) {
+            builder.append("- Status: not available").append(System.lineSeparator());
+        } else {
+            builder.append("- Profile Root ID: ")
+                .append(valueOrDash(metadata.getProfileRootId()))
+                .append(System.lineSeparator());
+            builder.append("- EPackage ID: ")
+                .append(valueOrDash(metadata.getEpackageId()))
+                .append(System.lineSeparator());
+            builder.append("- Selection Strategy: ")
+                .append(valueOrDash(metadata.getSelectionStrategy()))
+                .append(System.lineSeparator());
+            builder.append("- EPackage Version: ")
+                .append(valueOrDash(metadata.getEpackageVersion()))
+                .append(System.lineSeparator());
+            builder.append("- EPackage Date: ")
+                .append(valueOrDash(metadata.getEpackageDate()))
+                .append(System.lineSeparator());
+            builder.append("- EPackage nsURI: ")
+                .append(valueOrDash(metadata.getEpackageNsUri()))
+                .append(System.lineSeparator());
+            builder.append("- Candidate Count: ")
+                .append(metadata.getCandidateCount() == null ? "-" : metadata.getCandidateCount())
+                .append(System.lineSeparator());
         }
         builder.append(System.lineSeparator());
 

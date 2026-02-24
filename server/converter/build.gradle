@@ -17,6 +17,7 @@ p2deps {
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.eclipse.emf:org.eclipse.emf.ecore:2.38.0'
 }
 
 java {

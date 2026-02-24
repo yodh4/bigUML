@@ -14,6 +14,7 @@ public final class ConversionReport {
     private final InputInfo inputs;
     private final StatusInfo status;
     private final PreflightInfo preflight;
+    private final ProfileMetadata metadata;
     private final ConversionInfo conversion;
     private final List<String> warnings;
     private final List<String> errors;
@@ -24,6 +25,7 @@ public final class ConversionReport {
         InputInfo inputs,
         StatusInfo status,
         PreflightInfo preflight,
+        ProfileMetadata metadata,
         ConversionInfo conversion,
         List<String> warnings,
         List<String> errors
@@ -33,6 +35,7 @@ public final class ConversionReport {
         this.inputs = inputs;
         this.status = status;
         this.preflight = preflight;
+        this.metadata = metadata;
         this.conversion = conversion;
         this.warnings = warnings == null ? new ArrayList<>() : new ArrayList<>(warnings);
         this.errors = errors == null ? new ArrayList<>() : new ArrayList<>(errors);
@@ -45,6 +48,7 @@ public final class ConversionReport {
             InputInfo.empty(),
             StatusInfo.pending(),
             PreflightInfo.empty(),
+            ProfileMetadata.empty(),
             ConversionInfo.empty(),
             new ArrayList<>(),
             new ArrayList<>()
@@ -58,6 +62,7 @@ public final class ConversionReport {
             new InputInfo(input, output, profile, reportDir),
             status,
             preflight,
+            metadata,
             conversion,
             warnings,
             errors
@@ -72,6 +77,21 @@ public final class ConversionReport {
             inputs,
             status,
             new PreflightInfo(checks),
+            metadata,
+            conversion,
+            warnings,
+            errors
+        );
+    }
+
+    public ConversionReport withMetadata(ProfileMetadata metadata) {
+        return new ConversionReport(
+            tool,
+            timestamp,
+            inputs,
+            status,
+            preflight,
+            metadata,
             conversion,
             warnings,
             errors
@@ -85,6 +105,7 @@ public final class ConversionReport {
             inputs,
             status,
             preflight,
+            metadata,
             new ConversionInfo(mode, Collections.emptyList()),
             warnings,
             errors
@@ -98,6 +119,7 @@ public final class ConversionReport {
             inputs,
             StatusInfo.success(message),
             preflight,
+            metadata,
             conversion,
             warnings,
             errors
@@ -111,6 +133,7 @@ public final class ConversionReport {
             inputs,
             StatusInfo.failure(errorCode, message),
             preflight,
+            metadata,
             conversion,
             warnings,
             errors
@@ -137,12 +160,34 @@ public final class ConversionReport {
         return preflight;
     }
 
+    public ProfileMetadata getMetadata() {
+        return metadata;
+    }
+
     public ConversionInfo getConversion() {
         return conversion;
     }
 
     public List<String> getWarnings() {
         return Collections.unmodifiableList(warnings);
+    }
+
+    public ConversionReport withWarnings(List<String> warnings) {
+        List<String> mergedWarnings = new ArrayList<>(this.warnings);
+        if (warnings != null && !warnings.isEmpty()) {
+            mergedWarnings.addAll(warnings);
+        }
+        return new ConversionReport(
+            tool,
+            timestamp,
+            inputs,
+            status,
+            preflight,
+            metadata,
+            conversion,
+            mergedWarnings,
+            errors
+        );
     }
 
     public List<String> getErrors() {

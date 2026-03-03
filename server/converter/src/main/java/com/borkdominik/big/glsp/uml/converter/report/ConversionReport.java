@@ -15,6 +15,8 @@ public final class ConversionReport {
     private final StatusInfo status;
     private final PreflightInfo preflight;
     private final ProfileMetadata metadata;
+    private final NamespaceDecision namespaceDecision;
+    private final List<RuleLog> rules;
     private final ConversionInfo conversion;
     private final List<String> warnings;
     private final List<String> errors;
@@ -26,6 +28,8 @@ public final class ConversionReport {
         StatusInfo status,
         PreflightInfo preflight,
         ProfileMetadata metadata,
+        NamespaceDecision namespaceDecision,
+        List<RuleLog> rules,
         ConversionInfo conversion,
         List<String> warnings,
         List<String> errors
@@ -36,6 +40,8 @@ public final class ConversionReport {
         this.status = status;
         this.preflight = preflight;
         this.metadata = metadata;
+        this.namespaceDecision = namespaceDecision;
+        this.rules = rules == null ? new ArrayList<>() : new ArrayList<>(rules);
         this.conversion = conversion;
         this.warnings = warnings == null ? new ArrayList<>() : new ArrayList<>(warnings);
         this.errors = errors == null ? new ArrayList<>() : new ArrayList<>(errors);
@@ -49,6 +55,8 @@ public final class ConversionReport {
             StatusInfo.pending(),
             PreflightInfo.empty(),
             ProfileMetadata.empty(),
+            NamespaceDecision.empty(),
+            new ArrayList<>(),
             ConversionInfo.empty(),
             new ArrayList<>(),
             new ArrayList<>()
@@ -63,6 +71,8 @@ public final class ConversionReport {
             status,
             preflight,
             metadata,
+            namespaceDecision,
+            rules,
             conversion,
             warnings,
             errors
@@ -78,6 +88,8 @@ public final class ConversionReport {
             status,
             new PreflightInfo(checks),
             metadata,
+            namespaceDecision,
+            rules,
             conversion,
             warnings,
             errors
@@ -92,6 +104,40 @@ public final class ConversionReport {
             status,
             preflight,
             metadata,
+            namespaceDecision,
+            rules,
+            conversion,
+            warnings,
+            errors
+        );
+    }
+
+    public ConversionReport withNamespaceDecision(NamespaceDecision namespaceDecision) {
+        return new ConversionReport(
+            tool,
+            timestamp,
+            inputs,
+            status,
+            preflight,
+            metadata,
+            namespaceDecision,
+            rules,
+            conversion,
+            warnings,
+            errors
+        );
+    }
+
+    public ConversionReport withRuleLogs(List<RuleLog> ruleLogs) {
+        return new ConversionReport(
+            tool,
+            timestamp,
+            inputs,
+            status,
+            preflight,
+            metadata,
+            namespaceDecision,
+            ruleLogs,
             conversion,
             warnings,
             errors
@@ -106,7 +152,25 @@ public final class ConversionReport {
             status,
             preflight,
             metadata,
+            namespaceDecision,
+            rules,
             new ConversionInfo(mode, Collections.emptyList()),
+            warnings,
+            errors
+        );
+    }
+
+    public ConversionReport withConversion(String mode, List<String> rulesApplied) {
+        return new ConversionReport(
+            tool,
+            timestamp,
+            inputs,
+            status,
+            preflight,
+            metadata,
+            namespaceDecision,
+            rules,
+            new ConversionInfo(mode, rulesApplied),
             warnings,
             errors
         );
@@ -120,6 +184,8 @@ public final class ConversionReport {
             StatusInfo.success(message),
             preflight,
             metadata,
+            namespaceDecision,
+            rules,
             conversion,
             warnings,
             errors
@@ -134,6 +200,8 @@ public final class ConversionReport {
             StatusInfo.failure(errorCode, message),
             preflight,
             metadata,
+            namespaceDecision,
+            rules,
             conversion,
             warnings,
             errors
@@ -164,6 +232,14 @@ public final class ConversionReport {
         return metadata;
     }
 
+    public NamespaceDecision getNamespaceDecision() {
+        return namespaceDecision;
+    }
+
+    public List<RuleLog> getRules() {
+        return Collections.unmodifiableList(rules);
+    }
+
     public ConversionInfo getConversion() {
         return conversion;
     }
@@ -184,6 +260,8 @@ public final class ConversionReport {
             status,
             preflight,
             metadata,
+            namespaceDecision,
+            rules,
             conversion,
             mergedWarnings,
             errors

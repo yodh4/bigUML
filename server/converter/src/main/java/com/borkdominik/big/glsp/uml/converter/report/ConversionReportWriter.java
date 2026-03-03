@@ -1,6 +1,8 @@
 package com.borkdominik.big.glsp.uml.converter.report;
 
+import com.borkdominik.big.glsp.uml.converter.report.NamespaceDecision;
 import com.borkdominik.big.glsp.uml.converter.report.ProfileMetadata;
+import com.borkdominik.big.glsp.uml.converter.report.RuleLog;
 import com.borkdominik.big.glsp.uml.converter.service.PreflightCheck;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -106,6 +108,45 @@ public final class ConversionReportWriter {
             builder.append("- Candidate Count: ")
                 .append(metadata.getCandidateCount() == null ? "-" : metadata.getCandidateCount())
                 .append(System.lineSeparator());
+        }
+        builder.append(System.lineSeparator());
+
+        builder.append("## Namespace Resolution").append(System.lineSeparator());
+        NamespaceDecision decision = report.getNamespaceDecision();
+        if (decision == null || decision.getSelectedValue() == null) {
+            builder.append("- Status: not available").append(System.lineSeparator());
+        } else {
+            builder.append("- Current: ")
+                .append(valueOrDash(decision.getCurrentValue()))
+                .append(System.lineSeparator());
+            builder.append("- Selected: ")
+                .append(valueOrDash(decision.getSelectedValue()))
+                .append(System.lineSeparator());
+            builder.append("- Ambiguous: ")
+                .append(decision.isAmbiguous())
+                .append(System.lineSeparator());
+            builder.append("- Basis: ")
+                .append(valueOrDash(decision.getDecisionBasis()))
+                .append(System.lineSeparator());
+        }
+        builder.append(System.lineSeparator());
+
+        builder.append("## Rules Applied").append(System.lineSeparator());
+        List<RuleLog> rules = report.getRules();
+        if (rules.isEmpty()) {
+            builder.append("- none").append(System.lineSeparator());
+        } else {
+            for (RuleLog rule : rules) {
+                builder.append("- ")
+                    .append(rule.getId())
+                    .append(": matches=")
+                    .append(rule.getMatches())
+                    .append(", status=")
+                    .append(valueOrDash(rule.getStatus()))
+                    .append(", summary=")
+                    .append(valueOrDash(rule.getSummary()))
+                    .append(System.lineSeparator());
+            }
         }
         builder.append(System.lineSeparator());
 

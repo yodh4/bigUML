@@ -2,11 +2,12 @@ package com.borkdominik.big.glsp.uml.converter.cli;
 
 import com.borkdominik.big.glsp.uml.converter.report.ConversionReport;
 import com.borkdominik.big.glsp.uml.converter.report.ConversionReportWriter;
+import com.borkdominik.big.glsp.uml.converter.service.ConverterService;
+import com.borkdominik.big.glsp.uml.converter.service.TransformException;
 import com.borkdominik.big.glsp.uml.converter.service.PreflightResult;
 import com.borkdominik.big.glsp.uml.converter.service.PreflightService;
 import com.borkdominik.big.glsp.uml.converter.service.ProfileMetadataException;
 import com.borkdominik.big.glsp.uml.converter.service.ProfileMetadataResolver;
-import com.borkdominik.big.glsp.uml.converter.service.StubConverter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -14,7 +15,7 @@ import java.time.Instant;
 public final class ConverterCli {
     public static final String TOOL_NAME = "biguml-uml2winvmj-converter";
     public static final String TOOL_VERSION = "0.1.0";
-    public static final String STAGE = "1";
+    public static final String STAGE = "2";
 
     public static void main(String[] args) {
         ConverterCli cli = new ConverterCli();
@@ -66,9 +67,10 @@ public final class ConverterCli {
                 return writeReportAndExit(report, errorWriter, preflight.getErrorCode());
             }
 
+            ProfileMetadataResolver.ResolutionResult resolution;
             try {
                 ProfileMetadataResolver resolver = new ProfileMetadataResolver();
-                ProfileMetadataResolver.ResolutionResult resolution = resolver.resolve(profilePath);
+                resolution = resolver.resolve(profilePath);
                 report = report.withMetadata(resolution.getMetadata());
                 report = report.withWarnings(resolution.getWarnings());
             } catch (ProfileMetadataException resolveError) {
@@ -80,15 +82,27 @@ public final class ConverterCli {
             }
 
             try {
-                StubConverter converter = new StubConverter();
-                converter.copy(inputPath, outputPath);
-            } catch (Exception ioError) {
+                ConverterService converter = new ConverterService();
+                ConverterService.ConversionResult result = converter.convert(
+                    inputPath,
+                    outputPath,
+                    resolution.getMetadata()
+                );
+                report = report.withNamespaceDecision(result.getNamespaceDecision());
+                report = report.withRuleLogs(result.getRuleLogs());
+                report = report.withConversion("critical-transform", result.getRulesApplied());
+            } catch (TransformException transformError) {
+                report = report.failed(CliErrorCode.TRANSFORM_FAILED.getCode(), transformError.getMessage());
+                return writeReportAndExit(report, errorWriter, CliErrorCode.TRANSFORM_FAILED);
+            } catch (java.io.IOException ioError) {
                 report = report.failed(CliErrorCode.IO_OUTPUT_WRITE_FAILED.getCode(), ioError.getMessage());
                 return writeReportAndExit(report, errorWriter, CliErrorCode.IO_OUTPUT_WRITE_FAILED);
+            } catch (Exception transformError) {
+                report = report.failed(CliErrorCode.TRANSFORM_FAILED.getCode(), transformError.getMessage());
+                return writeReportAndExit(report, errorWriter, CliErrorCode.TRANSFORM_FAILED);
             }
 
-            report = report.withConversionMode("stub-copy");
-            report = report.success("Stub conversion completed");
+            report = report.success("Critical transform completed");
 
             return writeReportAndExit(report, errorWriter, CliErrorCode.NONE);
         } catch (CliException exception) {

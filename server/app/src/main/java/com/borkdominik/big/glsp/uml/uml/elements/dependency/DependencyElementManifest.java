@@ -18,6 +18,7 @@ import com.borkdominik.big.glsp.server.features.property_palette.BGPropertyPalet
 import com.borkdominik.big.glsp.server.features.property_palette.provider.BGDefaultPropertyPaletteProvider;
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
 import com.borkdominik.big.glsp.uml.uml.elements.dependency.gmodel.DependencyGModelMapper;
+import com.borkdominik.big.glsp.uml.uml.elements.element.features.StereotypePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.NamedElementPropertyProvider;
 
 public class DependencyElementManifest extends BGEMFEdgeElementManifest {
@@ -32,6 +33,7 @@ public class DependencyElementManifest extends BGEMFEdgeElementManifest {
       bindCreateHandler(DependencyOperationHandler.class);
       bindPropertyPalette(BGPropertyPaletteContribution.Options.builder()
          .propertyProviders(Set.of(
-            NamedElementPropertyProvider.class)));
+            NamedElementPropertyProvider.class,
+            StereotypePropertyProvider.class)));
    }
 }

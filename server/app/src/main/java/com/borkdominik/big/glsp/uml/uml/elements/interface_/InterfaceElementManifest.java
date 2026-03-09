@@ -19,6 +19,7 @@ import com.borkdominik.big.glsp.server.features.property_palette.provider.BGDefa
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
 import com.borkdominik.big.glsp.uml.uml.elements.attribute_owner.AttributeOwnerPropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.classifier.ClassifierPropertyProvider;
+import com.borkdominik.big.glsp.uml.uml.elements.element.features.StereotypePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.interface_.gmodel.InterfaceGModelMapper;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.NamedElementLabelEditHandler;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.NamedElementPropertyProvider;
@@ -40,6 +41,7 @@ public class InterfaceElementManifest extends BGEMFNodeElementManifest {
             NamedElementPropertyProvider.class,
             ClassifierPropertyProvider.class,
             AttributeOwnerPropertyProvider.class,
-            OperationOwnerPropertyProvider.class)));
+            OperationOwnerPropertyProvider.class,
+            StereotypePropertyProvider.class)));
    }
 }

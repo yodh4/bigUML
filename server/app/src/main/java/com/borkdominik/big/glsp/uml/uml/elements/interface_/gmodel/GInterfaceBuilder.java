@@ -22,6 +22,7 @@ import com.borkdominik.big.glsp.server.sdk.cdk.gmodel.GCModelList;
 import com.borkdominik.big.glsp.server.sdk.ui.builder.GCNodeBuilder;
 import com.borkdominik.big.glsp.server.sdk.ui.components.list.GCList;
 import com.borkdominik.big.glsp.uml.uml.elements.attribute_owner.GCAttributeOwner;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.GCNamedElement;
 import com.borkdominik.big.glsp.uml.uml.elements.operation_owner.GCOperationOwner;
 
@@ -43,10 +44,14 @@ public class GInterfaceBuilder<TOrigin extends Interface> extends GCNodeBuilder<
    protected GCProvider createHeader(final GCModelList<?, ?> root) {
       var namedElementOptions = GCNamedElement.Options.builder()
          .container(root)
-         .prefix((BGQuotationMark.quoteDoubleAngle("interface")))
-         .build();
+         .prefix(BGQuotationMark.quoteDoubleAngle("interface"));
 
-      return new GCNamedElement<>(context, origin, namedElementOptions);
+      var stereotypeNames = StereotypeUtil.getAppliedStereotypeNames(origin);
+      if (!stereotypeNames.isEmpty()) {
+         namedElementOptions.prefix(StereotypeUtil.formatStereotypeLabel(stereotypeNames));
+      }
+
+      return new GCNamedElement<>(context, origin, namedElementOptions.build());
    }
 
    protected GCProvider createBody(final GCModelList<?, ?> root) {

@@ -23,6 +23,7 @@ import com.borkdominik.big.glsp.server.sdk.cdk.base.GCProvider;
 import com.borkdominik.big.glsp.server.sdk.cdk.gmodel.GCModelList;
 import com.borkdominik.big.glsp.server.sdk.ui.builder.GCEdgeBuilder;
 import com.borkdominik.big.glsp.server.sdk.utils.StreamUtils;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 
 public class GDependencyBuilder<TOrigin extends Dependency> extends GCEdgeBuilder<TOrigin> {
 
@@ -55,6 +56,10 @@ public class GDependencyBuilder<TOrigin extends Dependency> extends GCEdgeBuilde
 
    @Override
    protected List<GCProvider> createComponentChildren(final GEdge gmodelRoot, final GCModelList<?, ?> componentRoot) {
+      var stereotypeNames = StereotypeUtil.getAppliedStereotypeNames(origin);
+      if (!stereotypeNames.isEmpty()) {
+         return List.of(createCenteredLabel(StereotypeUtil.formatStereotypeLabel(stereotypeNames)));
+      }
       return List.of();
    }
 

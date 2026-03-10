@@ -21,6 +21,7 @@ import com.borkdominik.big.glsp.server.sdk.cdk.base.GCProvider;
 import com.borkdominik.big.glsp.server.sdk.cdk.gmodel.GCModelList;
 import com.borkdominik.big.glsp.server.sdk.gmodel.BCCompartmentBuilder;
 import com.borkdominik.big.glsp.server.sdk.ui.builder.GCNodeBuilder;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.GCNamedElement;
 
 public class GPackageBuilder<TOrigin extends Package> extends GCNodeBuilder<TOrigin> {
@@ -40,9 +41,14 @@ public class GPackageBuilder<TOrigin extends Package> extends GCNodeBuilder<TOri
 
    protected GCProvider createHeader(final GCModelList<?, ?> root) {
       var namedElementOptions = GCNamedElement.Options.builder()
-         .container(root)
-         .build();
-      return new GCNamedElement<>(context, origin, namedElementOptions);
+         .container(root);
+
+      var stereotypeNames = StereotypeUtil.getAppliedStereotypeNames(origin);
+      if (!stereotypeNames.isEmpty()) {
+         namedElementOptions.prefix(StereotypeUtil.formatStereotypeLabel(stereotypeNames));
+      }
+
+      return new GCNamedElement<>(context, origin, namedElementOptions.build());
    }
 
    protected GCProvider createPackageBody(final GCModelList<?, ?> root) {

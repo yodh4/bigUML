@@ -32,6 +32,7 @@ import com.borkdominik.big.glsp.server.sdk.ui.components.label.GCNameLabel;
 import com.borkdominik.big.glsp.server.sdk.utils.StreamUtils;
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
 import com.borkdominik.big.glsp.uml.uml.elements.association.utils.AggregationKindUtil;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.multiplicity_element.MultiplicityUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.property.gmodel.suffix.PropertyMultiplicityLabelSuffix;
 
@@ -79,9 +80,17 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
       var target = targetProperty();
 
       return StreamUtils.concat(
-         List.of(createName(componentRoot)),
+         List.of(createStereotypeLabel(), createName(componentRoot)),
          createMemberEnd(gmodelRoot, source, 0.9d, GConstants.EdgeSide.BOTTOM, GConstants.EdgeSide.TOP),
          createMemberEnd(gmodelRoot, target, 0.1d, GConstants.EdgeSide.TOP, GConstants.EdgeSide.BOTTOM));
+   }
+
+   protected GCProvider createStereotypeLabel() {
+      var stereotypeNames = StereotypeUtil.getAppliedStereotypeNames(origin);
+      if (stereotypeNames.isEmpty()) {
+         return new GCNone(context, origin);
+      }
+      return createCenteredLabel(StereotypeUtil.formatStereotypeLabel(stereotypeNames));
    }
 
    protected GCProvider createName(final GCModelList<?, ?> root) {

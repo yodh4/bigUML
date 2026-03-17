@@ -18,6 +18,7 @@ import com.borkdominik.big.glsp.server.elements.manifest.integrations.BGEMFNodeE
 import com.borkdominik.big.glsp.server.features.autocomplete.BGAutocompleteContribution;
 import com.borkdominik.big.glsp.server.features.property_palette.BGPropertyPaletteContribution;
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
+import com.borkdominik.big.glsp.uml.uml.elements.element.features.StereotypePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.feature.FeaturePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.feature.StructuralFeaturePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.multiplicity_element.MultiplicityElementPropertyProvider;
@@ -55,7 +56,8 @@ public class PropertyElementManifest extends BGEMFNodeElementManifest {
                                     MultiplicityElementPropertyProvider.class,
                                     FeaturePropertyProvider.class,
                                     StructuralFeaturePropertyProvider.class,
-                                    TypedElementPropertyProvider.class)));
+                                    TypedElementPropertyProvider.class,
+                                    StereotypePropertyProvider.class)));
 
             bindAutocomplete(BGAutocompleteContribution.Options.builder()
                         .providers(Set.of(PropertyAutocompleteEntriesProvider.class)));

@@ -34,6 +34,7 @@ import com.borkdominik.big.glsp.server.sdk.ui.properties.GModelProperty;
 import com.borkdominik.big.glsp.server.sdk.ui.properties.GNotationProperty;
 import com.borkdominik.big.glsp.server.sdk.ui.properties.GSelectionBorderProperty;
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.element.VisibilityKindUtils;
 import com.borkdominik.big.glsp.uml.uml.elements.multiplicity_element.MultiplicityUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.GCNamedElement;
@@ -82,6 +83,14 @@ public class GPropertyBuilder<TOrigin extends Property>
       var container = new GCModelList<>(context, origin, new BCCompartmentBuilder<>(origin, context)
          .withHBoxLayout()
          .build());
+
+      var stereotypeNames = StereotypeUtil.getAppliedStereotypeNames(origin);
+      if (!stereotypeNames.isEmpty()) {
+         container.add(new GCLabel(context, origin,
+            GCLabel.Options.builder()
+               .label(StereotypeUtil.formatStereotypeLabel(stereotypeNames))
+               .build()));
+      }
 
       container.add(
          new GCLabel(context, origin,

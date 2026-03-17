@@ -75,6 +75,11 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
    }
 
    @Override
+   protected List<String> getRootGModelCss() {
+      return StreamUtils.concat(super.getDefaultCss(), List.of(BGCoreCSS.Marker.TENT.end()));
+   }
+
+   @Override
    protected List<GCProvider> createComponentChildren(final GEdge gmodelRoot, final GCModelList<?, ?> componentRoot) {
       var source = sourceProperty();
       var target = targetProperty();

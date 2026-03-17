@@ -31,6 +31,7 @@ import com.borkdominik.big.glsp.server.sdk.ui.builder.GCModelBuilder;
 import com.borkdominik.big.glsp.server.sdk.ui.properties.GModelProperty;
 import com.borkdominik.big.glsp.server.sdk.ui.properties.GNotationProperty;
 import com.borkdominik.big.glsp.server.sdk.ui.properties.GSelectionBorderProperty;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.GCNamedElement;
 
 public class GOperationBuilder<TOrigin extends Operation>
@@ -94,6 +95,11 @@ public class GOperationBuilder<TOrigin extends Operation>
       }
       if (origin.isAbstract()) {
          options.nameCss(BGCoreCSS.FONT_ITALIC);
+      }
+
+      var stereotypeNames = StereotypeUtil.getAppliedStereotypeNames(origin);
+      if (!stereotypeNames.isEmpty()) {
+         options.prefix(StereotypeUtil.formatStereotypeLabel(stereotypeNames));
       }
 
       return new GCNamedElement<>(context, origin, options.build());

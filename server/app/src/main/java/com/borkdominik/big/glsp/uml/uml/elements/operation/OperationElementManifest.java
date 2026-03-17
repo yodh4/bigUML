@@ -17,6 +17,7 @@ import com.borkdominik.big.glsp.server.elements.manifest.integrations.BGEMFNodeE
 import com.borkdominik.big.glsp.server.features.property_palette.BGPropertyPaletteContribution;
 import com.borkdominik.big.glsp.server.features.property_palette.provider.BGDefaultPropertyPaletteProvider;
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
+import com.borkdominik.big.glsp.uml.uml.elements.element.features.StereotypePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.feature.BehavioralFeaturePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.feature.FeaturePropertyProvider;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.NamedElementLabelEditHandler;
@@ -38,6 +39,7 @@ public class OperationElementManifest extends BGEMFNodeElementManifest {
          .propertyProviders(Set.of(
             NamedElementPropertyProvider.class,
             FeaturePropertyProvider.class,
-            BehavioralFeaturePropertyProvider.class)));
+            BehavioralFeaturePropertyProvider.class,
+            StereotypePropertyProvider.class)));
    }
 }

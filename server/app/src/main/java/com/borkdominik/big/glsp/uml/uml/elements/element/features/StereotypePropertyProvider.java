@@ -27,6 +27,7 @@ import com.borkdominik.big.glsp.server.features.property_palette.model.ElementPr
 import com.borkdominik.big.glsp.server.features.property_palette.provider.integrations.BGEMFElementPropertyProvider;
 import com.borkdominik.big.glsp.uml.core.model.ProfileService;
 import com.borkdominik.big.glsp.uml.uml.commands.UMLUpdateElementCommand;
+import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
@@ -104,12 +105,7 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
             }
 
             if (matchesMetaclass) {
-                boolean isApplied = false;
-                try {
-                    isApplied = element.isStereotypeApplied(stereotype);
-                } catch (Exception e) {
-                    // Stereotype not applicable yet
-                }
+                var isApplied = isStereotypeAppliedWithFallback(element, stereotype);
                 String propertyId = STEREOTYPE_PREFIX + stereotype.getName();
                 String label = "«" + stereotype.getName() + "»";
 
@@ -168,12 +164,7 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
         }
 
         // Only take action if the state is changing
-        boolean currentlyApplied = false;
-        try {
-            currentlyApplied = element.isStereotypeApplied(stereotype);
-        } catch (Exception e) {
-            // Stereotype not applicable yet - profile not applied
-        }
+        var currentlyApplied = isStereotypeAppliedWithFallback(element, stereotype);
 
         if (shouldApply == currentlyApplied) {
             return null;
@@ -316,5 +307,21 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
             LOGGER.log(java.util.logging.Level.SEVERE,
                     "Failed to remove stereotype manually: " + ex.getMessage(), ex);
         }
+    }
+
+    private boolean isStereotypeAppliedWithFallback(final Element element, final Stereotype stereotype) {
+        if (element == null || stereotype == null || stereotype.getName() == null) {
+            return false;
+        }
+
+        try {
+            if (element.isStereotypeApplied(stereotype)) {
+                return true;
+            }
+        } catch (Exception ignored) {
+            // fallback below handles standalone/manual cases
+        }
+
+        return StereotypeUtil.getAppliedStereotypeNames(element).contains(stereotype.getName());
     }
 }

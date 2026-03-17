@@ -10,6 +10,8 @@
  ********************************************************************************/
 package com.borkdominik.big.glsp.uml.uml.elements.communication_path.gmodel;
 
+import java.util.List;
+
 import org.eclipse.uml2.uml.CommunicationPath;
 
 import com.borkdominik.big.glsp.server.sdk.cdk.GCModelContext;
@@ -19,6 +21,11 @@ public class GCommunicationPathBuilder<TOrigin extends CommunicationPath> extend
 
    public GCommunicationPathBuilder(final GCModelContext context, final TOrigin origin, final String type) {
       super(context, origin, type);
+   }
+
+   @Override
+   protected List<String> getRootGModelCss() {
+      return super.getDefaultCss();
    }
 
 }

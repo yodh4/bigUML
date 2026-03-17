@@ -26,6 +26,11 @@ public class UseCaseGAssociationBuilder<TOrigin extends Association> extends GAs
       super(context, origin, type);
    }
 
+    @Override
+    protected List<String> getRootGModelCss() {
+      return super.getDefaultCss();
+   }
+
    @Override
    protected List<GCProvider> createComponentChildren(final GEdge gmodelRoot, final GCModelList<?, ?> componentRoot) {
       return List.of(createName(componentRoot));

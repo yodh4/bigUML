@@ -20,6 +20,7 @@ import com.borkdominik.big.glsp.uml.uml.customizations.UMLDefaultReconnectElemen
 import com.borkdominik.big.glsp.uml.uml.elements.abstraction.AbstractionElementManifest;
 import com.borkdominik.big.glsp.uml.uml.elements.association.AssociationElementManifest;
 import com.borkdominik.big.glsp.uml.uml.elements.class_.ClassElementManifest;
+import com.borkdominik.big.glsp.uml.uml.elements.component.ComponentElementManifest;
 import com.borkdominik.big.glsp.uml.uml.elements.data_type.DataTypeElementManifest;
 import com.borkdominik.big.glsp.uml.uml.elements.dependency.DependencyElementManifest;
 import com.borkdominik.big.glsp.uml.uml.elements.element_import.ElementImportElementManifest;
@@ -61,6 +62,7 @@ public final class UMLClassManifest extends BGRepresentationManifest {
       install(new EnumerationElementManifest(this));
       install(new EnumerationLiteralElementManifest(this));
       install(new DataTypeElementManifest(this));
+      install(new ComponentElementManifest(this));
       install(new InterfaceElementManifest(this));
       install(new OperationElementManifest(this));
       install(new PackageElementManifest(this));

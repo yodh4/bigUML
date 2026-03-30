@@ -41,8 +41,10 @@ public class RealizationConfiguration extends BGBaseEdgeConfiguration {
       return Set.of(
          new EdgeTypeHint(typeId, true, true, true,
             elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS,
-               UMLTypes.INTERFACE)),
+               UMLTypes.INTERFACE,
+               UMLTypes.COMPONENT)),
             elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS,
-               UMLTypes.INTERFACE))));
+               UMLTypes.INTERFACE,
+               UMLTypes.COMPONENT))));
    }
 }

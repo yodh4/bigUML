@@ -40,7 +40,7 @@ public class UsageConfiguration extends BGBaseEdgeConfiguration {
    public Set<EdgeTypeHint> getEdgeTypeHints() {
       return Set.of(
          new EdgeTypeHint(typeId, true, true, true,
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE)),
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE))));
+            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT)),
+            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT))));
    }
 }

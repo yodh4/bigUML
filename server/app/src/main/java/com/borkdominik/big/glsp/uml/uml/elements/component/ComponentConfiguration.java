@@ -44,7 +44,10 @@ public class ComponentConfiguration extends BGBaseNodeConfiguration {
    public Set<ShapeTypeHint> getShapeTypeHints() {
       return Set.of(
          new ShapeTypeHint(typeId, true, true, true, false,
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.USE_CASE))));
+            elementConfig().existingConfigurationTypeIds(Set.of(
+               UMLTypes.USE_CASE,
+               UMLTypes.PROPERTY,
+               UMLTypes.OPERATION))));
    }
 
 }

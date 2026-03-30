@@ -43,18 +43,20 @@ public class DependencyConfiguration extends BGBaseEdgeConfiguration {
             elementConfig().existingConfigurationTypeIds(Set.of(
                UMLTypes.ARTIFACT,
                UMLTypes.DEVICE,
-               UMLTypes.DEPLOYMENT_SPECIFICATION,
-               UMLTypes.EXECUTION_ENVIRONMENT,
-               UMLTypes.NODE,
-               UMLTypes.CLASS,
-               UMLTypes.INTERFACE)),
+                UMLTypes.DEPLOYMENT_SPECIFICATION,
+                UMLTypes.EXECUTION_ENVIRONMENT,
+                UMLTypes.NODE,
+                UMLTypes.COMPONENT,
+                UMLTypes.CLASS,
+                UMLTypes.INTERFACE)),
             elementConfig().existingConfigurationTypeIds(Set.of(
                UMLTypes.ARTIFACT,
                UMLTypes.DEVICE,
-               UMLTypes.DEPLOYMENT_SPECIFICATION,
-               UMLTypes.EXECUTION_ENVIRONMENT,
-               UMLTypes.NODE,
-               UMLTypes.CLASS,
-               UMLTypes.INTERFACE))));
+                UMLTypes.DEPLOYMENT_SPECIFICATION,
+                UMLTypes.EXECUTION_ENVIRONMENT,
+                UMLTypes.NODE,
+                UMLTypes.COMPONENT,
+                UMLTypes.CLASS,
+                UMLTypes.INTERFACE))));
    }
 }

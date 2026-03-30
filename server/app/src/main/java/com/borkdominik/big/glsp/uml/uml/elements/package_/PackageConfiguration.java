@@ -47,7 +47,7 @@ public class PackageConfiguration extends BGBaseNodeConfiguration {
             Set.of(UMLTypes.ARTIFACT, UMLTypes.CLASS, UMLTypes.DEVICE, UMLTypes.DEPLOYMENT_SPECIFICATION,
                UMLTypes.ENUMERATION,
                UMLTypes.EXECUTION_ENVIRONMENT, UMLTypes.INTERFACE, UMLTypes.DATA_TYPE, UMLTypes.MODEL,
-               UMLTypes.NODE,
+               UMLTypes.NODE, UMLTypes.COMPONENT,
                UMLTypes.PRIMITIVE_TYPE, UMLTypes.PACKAGE))));
 
    }

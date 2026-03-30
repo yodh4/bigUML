@@ -12,6 +12,7 @@ import {
     registerAbstractionElement,
     registerAssociationElement,
     registerClassElement,
+    registerSubjectElement,
     registerDataTypeElement,
     registerDependencyElement,
     registerEnumerationElement,
@@ -38,6 +39,7 @@ export const umlClassDiagramModule = new FeatureModule((bind, unbind, isBound, r
     registerClassElement(context, UMLDiagramType.CLASS);
     registerDataTypeElement(context, UMLDiagramType.CLASS);
     registerEnumerationElement(context, UMLDiagramType.CLASS);
+    registerSubjectElement(context, UMLDiagramType.CLASS);
     registerEnumerationLiteralElement(context, UMLDiagramType.CLASS);
     registerInterfaceElement(context, UMLDiagramType.CLASS);
     registerOperationElement(context, UMLDiagramType.CLASS);

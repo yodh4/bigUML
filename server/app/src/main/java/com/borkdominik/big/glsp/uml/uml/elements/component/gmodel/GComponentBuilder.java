@@ -25,13 +25,21 @@ import com.borkdominik.big.glsp.server.sdk.cdk.gmodel.GCModelList;
 import com.borkdominik.big.glsp.server.sdk.gmodel.BCCompartmentBuilder;
 import com.borkdominik.big.glsp.server.sdk.gmodel.BCLayoutOptions;
 import com.borkdominik.big.glsp.server.sdk.ui.builder.GCNodeBuilder;
+import com.borkdominik.big.glsp.server.sdk.ui.components.list.GCList;
+import com.borkdominik.big.glsp.uml.uml.elements.attribute_owner.GCAttributeOwner;
 import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.named_element.GCNamedElement;
+import com.borkdominik.big.glsp.uml.uml.elements.operation_owner.GCOperationOwner;
+import com.borkdominik.big.glsp.uml.unotation.Representation;
 
 public final class GComponentBuilder<TOrigin extends Component> extends GCNodeBuilder<TOrigin> {
+   protected final GCOperationOwner<TOrigin> operationOwner;
+   protected final GCAttributeOwner<TOrigin> attributeOwner;
 
    public GComponentBuilder(final GCModelContext context, final TOrigin origin, final String type) {
       super(context, origin, type);
+      this.operationOwner = new GCOperationOwner<>(context, origin);
+      this.attributeOwner = new GCAttributeOwner<>(context, origin);
    }
 
    @Override
@@ -66,6 +74,26 @@ public final class GComponentBuilder<TOrigin extends Component> extends GCNodeBu
    }
 
    protected GCProvider createBody(final GCModelList<?, ?> root) {
+      if (context.representation() == Representation.CLASS) {
+         return createClassBody();
+      }
+
+      return createUseCaseBody();
+   }
+
+   protected GCProvider createClassBody() {
+      var options = GCList.Options.builder()
+         .dividerBeforeInserts(true)
+         .build();
+      var list = new GCList(context, origin, options);
+
+      list.add(attributeOwner);
+      list.add(operationOwner);
+
+      return list;
+   }
+
+   protected GCProvider createUseCaseBody() {
       var list = new GCModelList<>(context, origin, new BCCompartmentBuilder<>(origin, context)
          .withFreeformLayout()
          .build());

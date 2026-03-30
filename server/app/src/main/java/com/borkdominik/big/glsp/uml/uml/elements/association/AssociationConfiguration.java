@@ -48,19 +48,19 @@ public class AssociationConfiguration extends BGBaseEdgeConfiguration {
       return Set.of(
          new EdgeTypeHint(associationTypeId, true, true, true,
             elementConfig()
-               .existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.ACTOR)),
+               .existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT, UMLTypes.ACTOR)),
             elementConfig()
                .existingConfigurationTypeIds(
-                  Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.USE_CASE))),
+                  Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT, UMLTypes.USE_CASE))),
 
-         new EdgeTypeHint(aggregationTypeId, true, true, true,
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE)),
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE))),
+          new EdgeTypeHint(aggregationTypeId, true, true, true,
+            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT)),
+            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT))),
 
-         new EdgeTypeHint(compositionTypeId, true, true, true,
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE)),
-            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE)))
+          new EdgeTypeHint(compositionTypeId, true, true, true,
+            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT)),
+            elementConfig().existingConfigurationTypeIds(Set.of(UMLTypes.CLASS, UMLTypes.INTERFACE, UMLTypes.COMPONENT)))
 
-      );
+       );
    }
 }

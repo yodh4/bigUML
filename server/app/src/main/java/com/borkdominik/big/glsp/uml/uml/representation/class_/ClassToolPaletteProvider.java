@@ -31,6 +31,7 @@ public final class ClassToolPaletteProvider extends BGBaseToolPaletteProvider {
          BGPaletteItemUtil.node(UMLTypes.ABSTRACT_CLASS.prefix(representation), "Abstract Class", "uml-class-icon"),
          BGPaletteItemUtil.node(UMLTypes.CLASS.prefix(representation), "Class", "uml-class-icon"),
          BGPaletteItemUtil.node(UMLTypes.ENUMERATION.prefix(representation), "Enumeration", "uml-enumeration-icon"),
+         BGPaletteItemUtil.node(UMLTypes.COMPONENT.prefix(representation), "Component", "uml-component-icon"),
          BGPaletteItemUtil.node(UMLTypes.DATA_TYPE.prefix(representation), "Data Type", "uml-data-type-icon"),
          BGPaletteItemUtil.node(UMLTypes.INTERFACE.prefix(representation), "Interface", "uml-interface-icon"),
          BGPaletteItemUtil.node(UMLTypes.PACKAGE.prefix(representation), "Package", "uml-package-icon"),

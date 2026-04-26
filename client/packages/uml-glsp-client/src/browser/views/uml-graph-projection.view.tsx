@@ -7,7 +7,15 @@
  * SPDX-License-Identifier: MIT
  *********************************************************************************/
 /** @jsx svg */
-import { GLSPProjectionView, type GViewportRootElement, type IViewArgs, type RenderingContext, svg } from '@eclipse-glsp/client';
+import {
+    GEdge,
+    type GModelElement,
+    GLSPProjectionView,
+    type GViewportRootElement,
+    type IViewArgs,
+    type RenderingContext,
+    svg
+} from '@eclipse-glsp/client';
 import { inject, injectable } from 'inversify';
 import { type VNode, type VNodeStyle, h } from 'snabbdom';
 import { SVGIdCreatorService } from './services/svg-id-creator.service.js';
@@ -28,14 +36,33 @@ export class UMLGraphProjectionView extends GLSPProjectionView {
         const edgeRouting = this.edgeRouterRegistry.routeAllChildren(model);
         const transform = `scale(${model.zoom}) translate(${-model.scroll.x},${-model.scroll.y})`;
         const ns = 'http://www.w3.org/2000/svg';
+        const nodeAndOtherChildren = this.renderLayer(model, context, edgeRouting, element => !this.isEdgeElement(element));
+        const edgeChildren = this.renderLayer(model, context, edgeRouting, element => this.isEdgeElement(element));
+
         return h(
             'svg',
             { ns, style: this.renderStyle(context) },
             h('g', { ns, attrs: { transform }, class: { 'svg-defs': true } }, [
                 ...this.renderAdditionals(context),
-                ...context.renderChildren(model, { edgeRouting })
+                ...nodeAndOtherChildren,
+                ...edgeChildren
             ])
         );
+    }
+
+    protected renderLayer(
+        model: Readonly<GViewportRootElement>,
+        context: RenderingContext,
+        edgeRouting: unknown,
+        predicate: (element: GModelElement) => boolean
+    ): VNode[] {
+        const layerModel = Object.create(model) as GViewportRootElement;
+        (layerModel as any).children = model.children.filter(predicate);
+        return context.renderChildren(layerModel, { edgeRouting });
+    }
+
+    protected isEdgeElement(element: GModelElement): boolean {
+        return element instanceof GEdge;
     }
 
     protected renderAdditionals(_context: RenderingContext): VNode[] {

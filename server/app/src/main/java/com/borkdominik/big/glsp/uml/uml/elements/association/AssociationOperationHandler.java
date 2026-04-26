@@ -10,6 +10,7 @@
  ********************************************************************************/
 package com.borkdominik.big.glsp.uml.uml.elements.association;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Set;
 
@@ -30,7 +31,6 @@ import org.eclipse.uml2.uml.Type;
 import com.borkdominik.big.glsp.server.core.commands.BGRecordingRunnableCommand;
 import com.borkdominik.big.glsp.server.core.commands.emf.notation.BGEMFDeleteNotationCommand;
 import com.borkdominik.big.glsp.server.core.commands.semantic.BGCreateEdgeSemanticCommand;
-import com.borkdominik.big.glsp.server.core.commands.semantic.BGDeleteElementSemanticCommand;
 import com.borkdominik.big.glsp.server.core.handler.operation.delete.BGDeleteHandler;
 import com.borkdominik.big.glsp.server.core.handler.operation.reconnect_edge.BGReconnectEdgeHandler;
 import com.borkdominik.big.glsp.server.core.model.BGTypeProvider;
@@ -89,16 +89,19 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
    @Override
    public Optional<Command> handleDelete(final DeleteOperation operation, final EObject object) {
       var semanticElement = modelState.getElementIndex().getSemanticOrThrow(object, Association.class);
+      var snapshotMemberEnds = new ArrayList<>(semanticElement.getMemberEnds());
 
       var command = new CompoundCommand();
-      for (var end : semanticElement.getMemberEnds()) {
-         if (!EcoreUtil.isAncestor(semanticElement, end)) {
-            command.append(new BGDeleteElementSemanticCommand(commandContext, modelState.getSemanticModel(), end));
+      command.append(new BGRecordingRunnableCommand(modelState.getSemanticModel(), () -> {
+         if (isAlive(semanticElement)) {
+            semanticElement.destroy();
          }
-      }
 
-      command
-         .append(new BGDeleteElementSemanticCommand(commandContext, modelState.getSemanticModel(), semanticElement));
+         for (var end : snapshotMemberEnds) {
+            cleanupSurvivingEnd(end);
+         }
+      }));
+
       command.append(new BGEMFDeleteNotationCommand(commandContext, semanticElement));
 
       return Optional.of(command);
@@ -239,6 +242,44 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
       } else {
          association.getNavigableOwnedEnds().remove(end);
       }
+   }
+
+   protected void cleanupSurvivingEnd(final Property end) {
+      try {
+         if (!isAlive(end) && end.eContainer() == null) {
+            return;
+         }
+
+         removeEndFromOwner(end);
+
+         if (isAlive(end)) {
+            EcoreUtil.delete(end, true);
+         }
+      } catch (RuntimeException ignored) {
+         // best effort cleanup to avoid blocking deletion of other ends
+      }
+   }
+
+   protected void removeEndFromOwner(final Property end) {
+      var owner = end.getOwner();
+      if (owner instanceof AttributeOwner attributeOwner) {
+         if (attributeOwner.getOwnedAttributes().contains(end)) {
+            attributeOwner.getOwnedAttributes().remove(end);
+         }
+      } else if (owner instanceof Association associationOwner) {
+         associationOwner.getOwnedEnds().remove(end);
+         associationOwner.getNavigableOwnedEnds().remove(end);
+      }
+
+      var association = end.getAssociation();
+      if (association != null) {
+         association.getOwnedEnds().remove(end);
+         association.getNavigableOwnedEnds().remove(end);
+      }
+   }
+
+   protected boolean isAlive(final EObject element) {
+      return element != null && !element.eIsProxy() && element.eResource() != null && element.eContainer() != null;
    }
 
 }

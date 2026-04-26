@@ -46,11 +46,15 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
 
    @Override
    public EObject source() {
-      return sourcePropertyElement();
+      var source = sourcePropertyElement();
+      return source != null ? source : origin;
    }
 
    public Property sourceProperty() {
       var memberEnds = origin.getMemberEnds();
+      if (memberEnds.isEmpty()) {
+         return null;
+      }
       return memberEnds.get(0);
    }
 
@@ -62,11 +66,15 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
 
    @Override
    public EObject target() {
-      return targetPropertyElement();
+      var target = targetPropertyElement();
+      return target != null ? target : origin;
    }
 
    public Property targetProperty() {
       var memberEnds = origin.getMemberEnds();
+      if (memberEnds.size() < 2) {
+         return null;
+      }
       return memberEnds.get(1);
    }
 
@@ -77,8 +85,12 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
    }
 
    protected Element resolvePropertyElement(final Property property, final Property opposite) {
+      if (property == null) {
+         return null;
+      }
+
       if (property.getOwner() instanceof Association) {
-         if (opposite.getType() != null) {
+         if (opposite != null && opposite.getType() != null) {
             return opposite.getType();
          }
          return property.getType();
@@ -94,8 +106,14 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
          return StreamUtils.concat(css, List.of(BGCoreCSS.Marker.TENT.end()));
       }
 
-      var sourceNavigable = isNavigable(sourceProperty());
-      var targetNavigable = isNavigable(targetProperty());
+      var sourceProperty = sourceProperty();
+      var targetProperty = targetProperty();
+      if (sourceProperty == null || targetProperty == null) {
+         return css;
+      }
+
+      var sourceNavigable = isNavigable(sourceProperty);
+      var targetNavigable = isNavigable(targetProperty);
 
       if (sourceNavigable) {
          css.add(BGCoreCSS.Marker.TENT.end());
@@ -113,11 +131,21 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
          return false;
       }
 
-      return sourceProperty().getAggregation() == AggregationKind.NONE_LITERAL
-         && targetProperty().getAggregation() == AggregationKind.NONE_LITERAL;
+      var sourceProperty = sourceProperty();
+      var targetProperty = targetProperty();
+      if (sourceProperty == null || targetProperty == null) {
+         return false;
+      }
+
+      return sourceProperty.getAggregation() == AggregationKind.NONE_LITERAL
+         && targetProperty.getAggregation() == AggregationKind.NONE_LITERAL;
    }
 
    protected boolean isNavigable(final Property property) {
+      if (property == null) {
+         return false;
+      }
+
       if (property.getOwner() instanceof Association association) {
          return association.getNavigableOwnedEnds().contains(property);
       }
@@ -129,6 +157,10 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
    protected List<GCProvider> createComponentChildren(final GEdge gmodelRoot, final GCModelList<?, ?> componentRoot) {
       var source = sourceProperty();
       var target = targetProperty();
+
+      if (source == null || target == null) {
+         return List.of(createStereotypeLabel(), createName(componentRoot));
+      }
 
       return StreamUtils.concat(
          List.of(createStereotypeLabel(), createName(componentRoot)),

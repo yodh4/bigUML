@@ -11,10 +11,12 @@
 package com.borkdominik.big.glsp.uml.uml.elements.package_.gmodel;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.glsp.graph.GNode;
 import org.eclipse.uml2.uml.Package;
 import org.eclipse.uml2.uml.PackageableElement;
+import org.eclipse.uml2.uml.Relationship;
 
 import com.borkdominik.big.glsp.server.sdk.cdk.GCModelContext;
 import com.borkdominik.big.glsp.server.sdk.cdk.base.GCProvider;
@@ -31,7 +33,13 @@ public class GPackageBuilder<TOrigin extends Package> extends GCNodeBuilder<TOri
    }
 
    public List<PackageableElement> packageableElements() {
-      return origin.getPackagedElements();
+      return origin.getPackagedElements().stream()
+         .filter(this::isPackageBodyElement)
+         .collect(Collectors.toList());
+   }
+
+   protected boolean isPackageBodyElement(final PackageableElement element) {
+      return !(element instanceof Relationship);
    }
 
    @Override

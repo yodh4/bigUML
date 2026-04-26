@@ -24,6 +24,7 @@ import org.eclipse.glsp.server.operations.ReconnectEdgeOperation;
 import org.eclipse.uml2.uml.AggregationKind;
 import org.eclipse.uml2.uml.Association;
 import org.eclipse.uml2.uml.AttributeOwner;
+import org.eclipse.uml2.uml.Property;
 import org.eclipse.uml2.uml.Type;
 
 import com.borkdominik.big.glsp.server.core.commands.BGRecordingRunnableCommand;
@@ -36,6 +37,7 @@ import com.borkdominik.big.glsp.server.core.model.BGTypeProvider;
 import com.borkdominik.big.glsp.server.elements.handler.operations.integrations.BGEMFEdgeOperationHandler;
 import com.borkdominik.big.glsp.uml.uml.UMLTypes;
 import com.borkdominik.big.glsp.uml.uml.commands.UMLCreateEdgeCommand;
+import com.borkdominik.big.glsp.uml.unotation.Representation;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
@@ -52,6 +54,7 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
    protected BGCreateEdgeSemanticCommand<Association, Type, Type, ?> createSemanticCommand(
       final CreateEdgeOperation operation, final Type source, final Type target) {
       var elementTypeId = operation.getElementTypeId();
+      var isDirectedPlainAssociation = isClassRepresentation() && UMLTypes.ASSOCIATION.isSame(representation, elementTypeId);
       var argument = UMLCreateEdgeCommand.Argument
          .<Association, Type, Type> createEdgeArgumentBuilder()
          .supplier((s, t) -> {
@@ -62,15 +65,21 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
                type = AggregationKind.COMPOSITE_LITERAL;
             }
 
-            return source.createAssociation(true,
+            var createdAssociation = s.createAssociation(true,
                type,
-               target.getName(),
+               t.getName(),
                1, 1,
-               target,
-               true,
+               t,
+               !isDirectedPlainAssociation,
                AggregationKind.NONE_LITERAL,
-               source.getName(),
+               s.getName(),
                1, 1);
+
+            if (isDirectedPlainAssociation) {
+               normalizeDirectedDefault(createdAssociation, s, t);
+            }
+
+            return createdAssociation;
          })
          .build();
 
@@ -106,31 +115,130 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
       var target = modelState.getElementIndex().getOrThrow(targetId, Type.class);
 
       return Optional.of(new BGRecordingRunnableCommand(modelState.getSemanticModel(), () -> {
-         var oldMemberEnds = semanticElement.getMemberEnds();
-         var oldSourceProperty = oldMemberEnds.get(0);
-         var oldTargetProperty = oldMemberEnds.get(1);
+         var memberEnds = semanticElement.getMemberEnds();
+         if (memberEnds.size() < 2) {
+            return;
+         }
 
-         if (oldSourceProperty.getOwner() instanceof AttributeOwner
-            && oldTargetProperty.getOwner() instanceof AttributeOwner) {
-            var oldSourceOwner = (AttributeOwner) oldSourceProperty.getOwner();
-            var oldTargetOwner = (AttributeOwner) oldTargetProperty.getOwner();
-            var newSourceOwner = (Type & AttributeOwner) source;
-            var newTargetOwner = (Type & AttributeOwner) target;
+         var sourceProperty = memberEnds.get(0);
+         var targetProperty = memberEnds.get(1);
 
-            oldSourceOwner.getOwnedAttributes().remove(oldSourceProperty);
-            oldSourceProperty.setType(source);
-            newSourceOwner.getOwnedAttributes().add(oldSourceProperty);
+         var isSourceAssociationOwned = sourceProperty.getOwner() instanceof Association;
+         var isTargetAssociationOwned = targetProperty.getOwner() instanceof Association;
 
-            oldTargetOwner.getOwnedAttributes().remove(oldTargetProperty);
-            oldTargetProperty.setType(target);
-            newTargetOwner.getOwnedAttributes().add(oldTargetProperty);
-         } else if (oldSourceProperty.getOwner() instanceof Association
-            && oldTargetProperty.getOwner() instanceof Association) {
-            oldSourceProperty.setType(source);
-            oldTargetProperty.setType(target);
+         var sourceAssociationOwnedNavigable = isAssociationOwnedNavigable(semanticElement, sourceProperty);
+         var targetAssociationOwnedNavigable = isAssociationOwnedNavigable(semanticElement, targetProperty);
+
+         sourceProperty.setType(target);
+         targetProperty.setType(source);
+
+         if (isSourceAssociationOwned) {
+            moveEndToAssociation(semanticElement, sourceProperty);
+            setAssociationOwnedNavigability(semanticElement, sourceProperty, sourceAssociationOwnedNavigable);
+         } else {
+            var newSourceOwner = asAttributeOwner(source);
+            if (newSourceOwner != null) {
+               moveEndToClassifier(semanticElement, sourceProperty, newSourceOwner);
+               sourceProperty.setIsNavigable(true);
+            } else {
+               moveEndToAssociation(semanticElement, sourceProperty);
+               setAssociationOwnedNavigability(semanticElement, sourceProperty, sourceAssociationOwnedNavigable);
+            }
+         }
+
+         if (isTargetAssociationOwned) {
+            moveEndToAssociation(semanticElement, targetProperty);
+            setAssociationOwnedNavigability(semanticElement, targetProperty, targetAssociationOwnedNavigable);
+         } else {
+            var newTargetOwner = asAttributeOwner(target);
+            if (newTargetOwner != null) {
+               moveEndToClassifier(semanticElement, targetProperty, newTargetOwner);
+               targetProperty.setIsNavigable(true);
+            } else {
+               moveEndToAssociation(semanticElement, targetProperty);
+               setAssociationOwnedNavigability(semanticElement, targetProperty, targetAssociationOwnedNavigable);
+            }
          }
 
       }));
+   }
+
+   protected boolean isClassRepresentation() {
+      return representation == Representation.CLASS;
+   }
+
+   protected void normalizeDirectedDefault(final Association association, final Type source, final Type target) {
+      var memberEnds = association.getMemberEnds();
+      if (memberEnds.size() < 2) {
+         return;
+      }
+
+      var sourceEnd = memberEnds.get(0);
+      var targetEnd = memberEnds.get(1);
+
+      sourceEnd.setType(target);
+      targetEnd.setType(source);
+
+      var sourceOwner = asAttributeOwner(source);
+      if (sourceOwner != null) {
+         moveEndToClassifier(association, sourceEnd, sourceOwner);
+         sourceEnd.setIsNavigable(true);
+      }
+
+      moveEndToAssociation(association, targetEnd);
+      setAssociationOwnedNavigability(association, targetEnd, false);
+   }
+
+   protected AttributeOwner asAttributeOwner(final Type type) {
+      if (type instanceof AttributeOwner owner) {
+         return owner;
+      }
+      return null;
+   }
+
+   protected void moveEndToClassifier(final Association association, final Property end, final AttributeOwner owner) {
+      removeFromCurrentOwner(association, end);
+      if (!owner.getOwnedAttributes().contains(end)) {
+         owner.getOwnedAttributes().add(end);
+      }
+      association.getNavigableOwnedEnds().remove(end);
+   }
+
+   protected void moveEndToAssociation(final Association association, final Property end) {
+      removeFromCurrentOwner(association, end);
+      if (!association.getOwnedEnds().contains(end)) {
+         association.getOwnedEnds().add(end);
+      }
+   }
+
+   protected void removeFromCurrentOwner(final Association association, final Property end) {
+      var owner = end.getOwner();
+      if (owner instanceof AttributeOwner attributeOwner) {
+         attributeOwner.getOwnedAttributes().remove(end);
+      } else if (owner instanceof Association assocOwner) {
+         assocOwner.getOwnedEnds().remove(end);
+         assocOwner.getNavigableOwnedEnds().remove(end);
+      }
+
+      association.getNavigableOwnedEnds().remove(end);
+   }
+
+   protected boolean isAssociationOwnedNavigable(final Association association, final Property end) {
+      if (!(end.getOwner() instanceof Association)) {
+         return end.isNavigable();
+      }
+      return association.getNavigableOwnedEnds().contains(end);
+   }
+
+   protected void setAssociationOwnedNavigability(final Association association, final Property end,
+      final boolean navigable) {
+      if (navigable) {
+         if (!association.getNavigableOwnedEnds().contains(end)) {
+            association.getNavigableOwnedEnds().add(end);
+         }
+      } else {
+         association.getNavigableOwnedEnds().remove(end);
+      }
    }
 
 }

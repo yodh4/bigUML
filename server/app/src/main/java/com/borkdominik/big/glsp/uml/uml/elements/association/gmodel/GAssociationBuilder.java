@@ -17,6 +17,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.glsp.graph.GEdge;
 import org.eclipse.glsp.graph.builder.impl.GEdgePlacementBuilder;
 import org.eclipse.glsp.graph.util.GConstants;
+import org.eclipse.uml2.uml.AggregationKind;
 import org.eclipse.uml2.uml.Association;
 import org.eclipse.uml2.uml.Element;
 import org.eclipse.uml2.uml.Property;
@@ -35,6 +36,7 @@ import com.borkdominik.big.glsp.uml.uml.elements.association.utils.AggregationKi
 import com.borkdominik.big.glsp.uml.uml.elements.element.StereotypeUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.multiplicity_element.MultiplicityUtil;
 import com.borkdominik.big.glsp.uml.uml.elements.property.gmodel.suffix.PropertyMultiplicityLabelSuffix;
+import com.borkdominik.big.glsp.uml.unotation.Representation;
 
 public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuilder<TOrigin> {
 
@@ -54,8 +56,8 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
 
    public Element sourcePropertyElement() {
       var source = sourceProperty();
-      return source.getOwner() instanceof Association ? source.getType()
-         : source.getOwner();
+      var target = targetProperty();
+      return resolvePropertyElement(source, target);
    }
 
    @Override
@@ -70,13 +72,57 @@ public class GAssociationBuilder<TOrigin extends Association> extends GCEdgeBuil
 
    public Element targetPropertyElement() {
       var target = targetProperty();
-      return target.getOwner() instanceof Association ? target.getType()
-         : target.getOwner();
+      var source = sourceProperty();
+      return resolvePropertyElement(target, source);
+   }
+
+   protected Element resolvePropertyElement(final Property property, final Property opposite) {
+      if (property.getOwner() instanceof Association) {
+         if (opposite.getType() != null) {
+            return opposite.getType();
+         }
+         return property.getType();
+      }
+
+      return property.getOwner();
    }
 
    @Override
    protected List<String> getRootGModelCss() {
-      return StreamUtils.concat(super.getDefaultCss(), List.of(BGCoreCSS.Marker.TENT.end()));
+      var css = StreamUtils.concat(super.getDefaultCss(), List.<String>of());
+      if (!supportsDynamicArrow()) {
+         return StreamUtils.concat(css, List.of(BGCoreCSS.Marker.TENT.end()));
+      }
+
+      var sourceNavigable = isNavigable(sourceProperty());
+      var targetNavigable = isNavigable(targetProperty());
+
+      if (sourceNavigable) {
+         css.add(BGCoreCSS.Marker.TENT.end());
+      }
+
+      if (targetNavigable) {
+         css.add(BGCoreCSS.Marker.TENT.start());
+      }
+
+      return css;
+   }
+
+   protected boolean supportsDynamicArrow() {
+      if (context.representation() != Representation.CLASS) {
+         return false;
+      }
+
+      return sourceProperty().getAggregation() == AggregationKind.NONE_LITERAL
+         && targetProperty().getAggregation() == AggregationKind.NONE_LITERAL;
+   }
+
+   protected boolean isNavigable(final Property property) {
+      if (property.getOwner() instanceof Association association) {
+         return association.getNavigableOwnedEnds().contains(property);
+      }
+
+      return property.isNavigable();
    }
 
    @Override

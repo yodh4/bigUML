@@ -11,6 +11,7 @@
 package com.borkdominik.big.glsp.uml.core.model;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.logging.Logger;
 
 import org.eclipse.emf.common.util.URI;
@@ -18,6 +19,7 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.glsp.server.actions.SaveModelAction;
 import org.eclipse.glsp.server.emf.EMFIdGenerator;
 import org.eclipse.glsp.server.emf.model.notation.NotationFactory;
@@ -139,11 +141,26 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
          }
 
          try {
-            resource.save(null);
+            if (isUmlResource(uri)) {
+               var saveOptions = new HashMap<String, Object>();
+               saveOptions.put(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE);
+               resource.save(saveOptions);
+            } else {
+               resource.save(null);
+            }
          } catch (IOException e) {
             throw new GLSPServerException("Could not save model to file: " + uri, e);
          }
       }
+   }
+
+   private boolean isUmlResource(final URI uri) {
+      if (uri == null) {
+         return false;
+      }
+
+      var uriText = uri.toString();
+      return uriText.endsWith(".uml") && !uriText.endsWith(".profile.uml");
    }
 
    @Override

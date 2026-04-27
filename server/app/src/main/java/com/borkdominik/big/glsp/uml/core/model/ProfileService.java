@@ -13,12 +13,17 @@ package com.borkdominik.big.glsp.uml.core.model;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EClassifier;
+import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.uml2.uml.Element;
@@ -137,23 +142,76 @@ public class ProfileService {
      * in the EPackage.Registry for stereotype application to work.
      */
     private void registerProfileEcorePackages(Profile profile, ResourceSet resourceSet) {
+        Map<String, EPackage> selectedByNsUri = new LinkedHashMap<>();
+
         for (var annotation : profile.getEAnnotations()) {
             if ("http://www.eclipse.org/uml2/2.0.0/UML".equals(annotation.getSource())) {
                 for (var content : annotation.getContents()) {
-                    if (content instanceof org.eclipse.emf.ecore.EPackage) {
-                        var ePackage = (org.eclipse.emf.ecore.EPackage) content;
+                    if (content instanceof EPackage) {
+                        var ePackage = (EPackage) content;
                         String nsURI = ePackage.getNsURI();
                         if (nsURI != null && !nsURI.isEmpty()) {
-                            // Register in both global and resource set registries
-                            org.eclipse.emf.ecore.EPackage.Registry.INSTANCE.put(nsURI, ePackage);
-                            resourceSet.getPackageRegistry().put(nsURI, ePackage);
-                            LOGGER.info("Registered Ecore package: " + ePackage.getName() +
-                                    " (nsURI: " + nsURI + ")");
+                            EPackage existing = selectedByNsUri.get(nsURI);
+                            if (existing == null) {
+                                selectedByNsUri.put(nsURI, ePackage);
+                            } else {
+                                EPackage preferred = choosePreferredPackage(profile, existing, ePackage);
+                                if (preferred != existing) {
+                                    selectedByNsUri.put(nsURI, preferred);
+                                }
+                                LOGGER.warning("Duplicate profile Ecore package for nsURI '" + nsURI
+                                        + "' detected. Keeping package with better stereotype-name consistency.");
+                            }
                         }
                     }
                 }
             }
         }
+
+        for (var entry : selectedByNsUri.entrySet()) {
+            String nsURI = entry.getKey();
+            EPackage ePackage = entry.getValue();
+
+            org.eclipse.emf.ecore.EPackage.Registry.INSTANCE.put(nsURI, ePackage);
+            resourceSet.getPackageRegistry().put(nsURI, ePackage);
+
+            LOGGER.info("Registered Ecore package: " + ePackage.getName() +
+                    " (nsURI: " + nsURI + ", stereotypeMatchScore: "
+                    + calculateStereotypeNameMatchScore(profile, ePackage) + ")");
+        }
+    }
+
+    private EPackage choosePreferredPackage(Profile profile, EPackage current, EPackage candidate) {
+        int currentScore = calculateStereotypeNameMatchScore(profile, current);
+        int candidateScore = calculateStereotypeNameMatchScore(profile, candidate);
+
+        if (candidateScore > currentScore) {
+            return candidate;
+        }
+
+        return current;
+    }
+
+    private int calculateStereotypeNameMatchScore(Profile profile, EPackage ePackage) {
+        if (profile == null || ePackage == null) {
+            return 0;
+        }
+
+        int score = 0;
+
+        for (Stereotype stereotype : profile.getOwnedStereotypes()) {
+            String stereotypeName = stereotype.getName();
+            if (stereotypeName == null || stereotypeName.isBlank()) {
+                continue;
+            }
+
+            EClassifier classifier = ePackage.getEClassifier(stereotypeName);
+            if (classifier instanceof EClass) {
+                score++;
+            }
+        }
+
+        return score;
     }
 
     /**

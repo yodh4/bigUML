@@ -233,23 +233,24 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
      */
     private void applyStereotypeManually(Element element, Stereotype stereotype, Profile profile) {
         try {
-            // Find the EClass for this stereotype in the profile's Ecore definition
-            org.eclipse.emf.ecore.EPackage ePackage = profile.getDefinition();
-            if (ePackage == null) {
-                LOGGER.warning("Profile has no Ecore definition, cannot apply stereotype manually");
-                return;
-            }
-
-            org.eclipse.emf.ecore.EClassifier eClassifier = ePackage.getEClassifier(stereotype.getName());
-            if (eClassifier == null || !(eClassifier instanceof org.eclipse.emf.ecore.EClass)) {
+            var stereotypeEClassOpt = StereotypeUtil.resolveStereotypeApplicationEClass(profile, stereotype);
+            if (stereotypeEClassOpt.isEmpty()) {
                 LOGGER.warning("No EClass found for stereotype '" + stereotype.getName() + "' in profile definition");
                 return;
             }
 
-            org.eclipse.emf.ecore.EClass stereotypeEClass = (org.eclipse.emf.ecore.EClass) eClassifier;
+            org.eclipse.emf.ecore.EClass stereotypeEClass = stereotypeEClassOpt.get();
+            LOGGER.info("Resolved stereotype application EClass for '" + stereotype.getName()
+                    + "' as '" + stereotypeEClass.getName() + "'");
+
+            var stereotypeEPackage = stereotypeEClass.getEPackage();
+            if (stereotypeEPackage == null || stereotypeEPackage.getEFactoryInstance() == null) {
+                LOGGER.warning("No EFactory available for stereotype EClass '" + stereotypeEClass.getName() + "'");
+                return;
+            }
 
             // Create an instance of the stereotype's EClass
-            org.eclipse.emf.ecore.EObject stereotypeApp = ePackage.getEFactoryInstance().create(stereotypeEClass);
+            org.eclipse.emf.ecore.EObject stereotypeApp = stereotypeEPackage.getEFactoryInstance().create(stereotypeEClass);
 
             // Set the base_* reference to the element
             String baseName = "base_" + element.eClass().getName();
@@ -290,7 +291,7 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
             var iterator = resource.getContents().iterator();
             while (iterator.hasNext()) {
                 var obj = iterator.next();
-                if (obj.eClass().getName().equals(stereotype.getName())) {
+                if (StereotypeUtil.isStereotypeApplicationOf(obj, stereotype)) {
                     // Check if this application refers to our element
                     String baseName = "base_" + element.eClass().getName();
                     org.eclipse.emf.ecore.EStructuralFeature baseFeature = obj.eClass()

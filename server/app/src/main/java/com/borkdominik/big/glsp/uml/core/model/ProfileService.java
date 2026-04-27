@@ -42,6 +42,7 @@ public class ProfileService {
 
     private static final Logger LOGGER = Logger.getLogger(ProfileService.class.getName());
     private static final String PROFILE_EXTENSION = ".profile.uml";
+    private static final String CANONICAL_PROFILE_PATHMAP_PREFIX = "pathmap://model/uml-vm-profile/";
 
     private final List<Profile> loadedProfiles = new ArrayList<>();
 
@@ -101,6 +102,10 @@ public class ProfileService {
             if (root instanceof Profile) {
                 Profile profile = (Profile) root;
 
+                // Remap early so downstream profile handling and later model save use
+                // canonical pathmap references.
+                remapProfileResourceUri(profile, resource, resourceSet, profileUri);
+
                 // Register the Ecore packages from the profile's annotations
                 // These are needed for UML2 to recognize stereotypes as applicable
                 registerProfileEcorePackages(profile, resourceSet);
@@ -133,6 +138,80 @@ public class ProfileService {
             LOGGER.log(Level.SEVERE, "Error loading profile: " + profileUri, e);
             return null;
         }
+    }
+
+    private void remapProfileResourceUri(Profile profile, Resource resource, ResourceSet resourceSet, URI originalFileUri) {
+        if (resource == null || resourceSet == null || originalFileUri == null) {
+            return;
+        }
+
+        URI canonicalPathmapUri = buildCanonicalProfilePathmapUri(originalFileUri);
+        if (canonicalPathmapUri == null) {
+            LOGGER.warning("Cannot compute canonical profile URI for: " + originalFileUri);
+            return;
+        }
+
+        boolean canonicalMappingAccepted = registerUriMapping(resourceSet, canonicalPathmapUri, originalFileUri,
+                "canonical profile mapping");
+
+        // Secondary compatibility alias: profile self-declared URI, if pathmap-based.
+        if (profile != null && profile.getURI() != null && !profile.getURI().isBlank()) {
+            try {
+                URI declaredUri = URI.createURI(profile.getURI());
+                if ("pathmap".equals(declaredUri.scheme())) {
+                    registerUriMapping(resourceSet, declaredUri, originalFileUri,
+                            "profile-declared URI mapping");
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Invalid profile declared URI: " + profile.getURI(), e);
+            }
+        }
+
+        if (canonicalMappingAccepted) {
+            URI previousResourceUri = resource.getURI();
+            resource.setURI(canonicalPathmapUri);
+            LOGGER.info("Remapped profile resource URI from " + previousResourceUri + " to " + canonicalPathmapUri);
+        } else {
+            LOGGER.warning("Skipped remapping profile resource URI due to mapping collision for "
+                    + canonicalPathmapUri + "; keeping resource URI " + resource.getURI());
+        }
+    }
+
+    private URI buildCanonicalProfilePathmapUri(URI originalFileUri) {
+        if (originalFileUri == null) {
+            return null;
+        }
+
+        String lastSegment = originalFileUri.lastSegment();
+        if (lastSegment == null || lastSegment.isBlank()) {
+            return null;
+        }
+
+        return URI.createURI(CANONICAL_PROFILE_PATHMAP_PREFIX + lastSegment);
+    }
+
+    private boolean registerUriMapping(ResourceSet resourceSet, URI sourceUri, URI targetUri, String label) {
+        if (resourceSet == null || sourceUri == null || targetUri == null) {
+            return false;
+        }
+
+        Map<URI, URI> uriMap = resourceSet.getURIConverter().getURIMap();
+        URI existingTarget = uriMap.get(sourceUri);
+
+        if (existingTarget == null) {
+            uriMap.put(sourceUri, targetUri);
+            LOGGER.info("Registered " + label + ": " + sourceUri + " -> " + targetUri);
+            return true;
+        }
+
+        if (existingTarget.equals(targetUri)) {
+            return true;
+        }
+
+        LOGGER.warning("URI mapping collision for " + sourceUri + " while registering " + label
+                + ". Existing target: " + existingTarget + ", new target: " + targetUri
+                + ". Keeping existing target.");
+        return false;
     }
 
     /**

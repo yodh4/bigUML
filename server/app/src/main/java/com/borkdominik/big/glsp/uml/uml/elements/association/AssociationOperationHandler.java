@@ -58,6 +58,19 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
       var argument = UMLCreateEdgeCommand.Argument
          .<Association, Type, Type> createEdgeArgumentBuilder()
          .supplier((s, t) -> {
+            var isPlainAssociation = UMLTypes.ASSOCIATION.isSame(representation, elementTypeId);
+            var targetName = t.getName();
+            var sourceName = s.getName();
+
+            if (isPlainAssociation) {
+               if (targetName != null) {
+                  targetName = targetName.toLowerCase();
+               }
+               if (sourceName != null) {
+                  sourceName = sourceName.toLowerCase();
+               }
+            }
+
             var type = AggregationKind.NONE_LITERAL;
             if (UMLTypes.AGGREGATION.isSame(representation, elementTypeId)) {
                type = AggregationKind.SHARED_LITERAL;
@@ -67,12 +80,12 @@ public class AssociationOperationHandler extends BGEMFEdgeOperationHandler<Assoc
 
             var createdAssociation = s.createAssociation(true,
                type,
-               t.getName(),
+               targetName,
                1, 1,
                t,
                !isDirectedPlainAssociation,
                AggregationKind.NONE_LITERAL,
-               s.getName(),
+               sourceName,
                1, 1);
 
             if (isDirectedPlainAssociation) {

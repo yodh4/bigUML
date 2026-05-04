@@ -11,9 +11,11 @@
 package com.borkdominik.big.glsp.uml.uml.elements.element;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.emf.ecore.EAnnotation;
@@ -32,6 +34,113 @@ import com.borkdominik.big.glsp.server.core.constants.BGQuotationMark;
 public final class StereotypeUtil {
    private static final String BASE_FEATURE_PREFIX = "base_";
    private static final String UML_ANNOTATION_SOURCE = "http://www.eclipse.org/uml2/2.0.0/UML";
+
+   // ---------------------------------------------------------------------------
+   // Stereotype index cache — replaces the O(N×M) full-resource scan
+   // ---------------------------------------------------------------------------
+
+   /**
+    * Cached index of manually-applied stereotypes, built by scanning
+    * resource.getContents() once and mapping each target Element to
+    * its applied stereotype names.
+    */
+   private static final class StereotypeIndex {
+      final org.eclipse.emf.ecore.resource.Resource resource; // identity reference
+      final int contentSize;                                   // snapshot of resource.getContents().size()
+      final Map<Element, List<String>> elementToNames;         // the index
+
+      StereotypeIndex(org.eclipse.emf.ecore.resource.Resource resource, int contentSize,
+            Map<Element, List<String>> elementToNames) {
+         this.resource = resource;
+         this.contentSize = contentSize;
+         this.elementToNames = elementToNames;
+      }
+
+      /**
+       * Returns true if this index is still valid for the given resource.
+       * The index is valid when the resource reference is the same instance
+       * AND the top-level contents count has not changed.
+       * <p>
+       * Adding or removing a stereotype application always changes
+       * resource.getContents().size(), so this is a reliable invalidation signal.
+       */
+      boolean isValidFor(org.eclipse.emf.ecore.resource.Resource res) {
+         return this.resource == res
+               && this.contentSize == res.getContents().size();
+      }
+   }
+
+   /** The current cached index. Replaced lazily when stale. */
+   private static StereotypeIndex cachedIndex = null;
+
+   /**
+    * Builds the stereotype index for the given resource.
+    * Scans all top-level EObjects in resource.getContents() once,
+    * identifies stereotype application EObjects (those with base_ features),
+    * and maps each target Element to its applied stereotype names.
+    */
+   private static StereotypeIndex buildIndex(final org.eclipse.emf.ecore.resource.Resource resource) {
+      var index = new HashMap<Element, List<String>>();
+
+      for (EObject object : resource.getContents()) {
+         if (object == null || object.eClass() == null || object.eClass().getName() == null) {
+            continue;
+         }
+
+         // Check each base_ feature to find the target Element(s)
+         for (EStructuralFeature feature : object.eClass().getEAllStructuralFeatures()) {
+            var featureName = feature.getName();
+            if (featureName == null || !featureName.startsWith(BASE_FEATURE_PREFIX)) {
+               continue;
+            }
+
+            try {
+               var target = object.eGet(feature);
+               if (target instanceof Element element) {
+                  var stereotypeName = resolveStereotypeName(object)
+                        .orElse(object.eClass().getName());
+                  if (stereotypeName != null && !stereotypeName.isBlank()) {
+                     index.computeIfAbsent(element, k -> new ArrayList<>())
+                          .add(stereotypeName);
+                  }
+               }
+            } catch (Exception ignored) {
+               // ignore unreadable dynamic features
+            }
+         }
+      }
+
+      return new StereotypeIndex(resource, resource.getContents().size(), index);
+   }
+
+   /**
+    * Returns the cached index for the given resource, rebuilding it if stale.
+    */
+   private static StereotypeIndex getOrBuildIndex(final org.eclipse.emf.ecore.resource.Resource resource) {
+      var current = cachedIndex;
+      if (current != null && current.isValidFor(resource)) {
+         return current;
+      }
+
+      var newIndex = buildIndex(resource);
+      cachedIndex = newIndex;
+      return newIndex;
+   }
+
+   /**
+    * Explicitly invalidates the stereotype index cache.
+    * Call this after directly modifying stereotype applications
+    * (e.g., in StereotypePropertyProvider.applyStereotypeManually).
+    * <p>
+    * Note: The cache is also automatically invalidated when
+    * resource.getContents().size() changes, so this is a safety net
+    * that guarantees immediate invalidation.
+    */
+   public static void invalidateCache() {
+      cachedIndex = null;
+   }
+
+   // ---------------------------------------------------------------------------
 
    private StereotypeUtil() {
    }
@@ -75,17 +184,11 @@ public final class StereotypeUtil {
          return;
       }
 
-      for (EObject object : resource.getContents()) {
-         if (object == null || object.eClass() == null || object.eClass().getName() == null) {
-            continue;
-         }
-
-         if (isAppliedToElement(object, element)) {
-            var stereotypeName = resolveStereotypeName(object).orElse(object.eClass().getName());
-            if (!stereotypeName.isBlank()) {
-               names.add(stereotypeName);
-            }
-         }
+      // O(1) amortized: look up the pre-built index instead of scanning all contents
+      var index = getOrBuildIndex(resource);
+      var cachedNames = index.elementToNames.get(element);
+      if (cachedNames != null) {
+         names.addAll(cachedNames);
       }
    }
 

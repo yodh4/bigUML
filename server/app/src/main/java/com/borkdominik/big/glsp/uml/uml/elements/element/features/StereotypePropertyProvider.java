@@ -266,6 +266,7 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
             org.eclipse.emf.ecore.resource.Resource resource = element.eResource();
             if (resource != null) {
                 resource.getContents().add(stereotypeApp);
+                StereotypeUtil.invalidateCache(); // immediately invalidate — safety net
                 LOGGER.info("Successfully applied stereotype '" + stereotype.getName()
                         + "' manually via EMF to element");
             } else {
@@ -298,6 +299,7 @@ public class StereotypePropertyProvider extends BGEMFElementPropertyProvider<Ele
                             .getEStructuralFeature(baseName);
                     if (baseFeature != null && obj.eGet(baseFeature) == element) {
                         iterator.remove();
+                        StereotypeUtil.invalidateCache(); // immediately invalidate — safety net
                         LOGGER.info("Removed stereotype '" + stereotype.getName() + "' manually from element");
                         return;
                     }

@@ -48,6 +48,7 @@ public class DependencyConfiguration extends BGBaseEdgeConfiguration {
                 UMLTypes.NODE,
                 UMLTypes.COMPONENT,
                 UMLTypes.CLASS,
+                UMLTypes.PACKAGE,
                 UMLTypes.INTERFACE)),
             elementConfig().existingConfigurationTypeIds(Set.of(
                UMLTypes.ARTIFACT,
@@ -57,6 +58,7 @@ public class DependencyConfiguration extends BGBaseEdgeConfiguration {
                 UMLTypes.NODE,
                 UMLTypes.COMPONENT,
                 UMLTypes.CLASS,
+                UMLTypes.PACKAGE,
                 UMLTypes.INTERFACE))));
    }
 }

@@ -88,7 +88,8 @@ public class AssociationPropertyProvider extends BGEMFElementPropertyProvider<As
                "Source Visibility",
                VisibilityKindUtils.asChoices(),
                sourceProperty.getVisibility().getLiteral())
-            .text(MultiplicityElementPropertyProvider.MULTIPLICITY, "Source Multiplicity",
+            .choice(MultiplicityElementPropertyProvider.MULTIPLICITY, "Source Multiplicity",
+               multiplicityChoices(),
                MultiplicityUtil.getMultiplicity(sourceProperty))
             .items();
 
@@ -103,7 +104,8 @@ public class AssociationPropertyProvider extends BGEMFElementPropertyProvider<As
                "Target Visibility",
                VisibilityKindUtils.asChoices(),
                targetProperty.getVisibility().getLiteral())
-            .text(MultiplicityElementPropertyProvider.MULTIPLICITY, "Target Multiplicity",
+            .choice(MultiplicityElementPropertyProvider.MULTIPLICITY, "Target Multiplicity",
+               multiplicityChoices(),
                MultiplicityUtil.getMultiplicity(targetProperty))
             .items();
       }));
@@ -168,6 +170,14 @@ public class AssociationPropertyProvider extends BGEMFElementPropertyProvider<As
       return List.of(
          ElementChoicePropertyItem.Choice.builder().label("Classifier").value(OWNER_CLASSIFIER).build(),
          ElementChoicePropertyItem.Choice.builder().label("Association").value(OWNER_ASSOCIATION).build());
+   }
+
+   protected List<ElementChoicePropertyItem.Choice> multiplicityChoices() {
+      return List.of(
+         ElementChoicePropertyItem.Choice.builder().label("0..*").value("0..*").build(),
+         ElementChoicePropertyItem.Choice.builder().label("1..*").value("1..*").build(),
+         ElementChoicePropertyItem.Choice.builder().label("0..1").value("0..1").build(),
+         ElementChoicePropertyItem.Choice.builder().label("1").value("1").build());
    }
 
    protected void setOwner(final Association association, final Property end, final Property opposite,

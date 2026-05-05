@@ -59,6 +59,14 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
       // automatically (Option B: on-demand pathmap resolution).
       registerEmbeddedProfilePathmaps(resourceSet);
 
+      // Pre-register the profile's Ecore packages into the ResourceSet's package
+      // registry so EMF can deserialize stereotype application EObjects.
+      // This does NOT add the profile resource to the ResourceSet — it uses
+      // a temporary ResourceSet to extract the EPackages only.
+      // StereotypePropertyProvider will therefore NOT show stereotypes for models
+      // that don't reference the profile.
+      profileService.registerEmbeddedProfileEcorePackages(resourceSet);
+
       return resourceSet;
    }
 
@@ -113,24 +121,27 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
    }
 
    /**
-    * Loads the embedded uml-vm-profile from the classpath and registers its
-    * Ecore packages in the ResourceSet. This replaces directory-based discovery:
-    * since this is an internal tool, only the built-in profile is needed.
-    * Must be called BEFORE loading the model so EMF can deserialize stereotype
-    * application EObjects without PackageNotFoundException.
+    * Profile loading hook called before model deserialization.
+    *
+    * With Option B (on-demand pathmap resolution), this method is intentionally
+    * a no-op. The Ecore packages are pre-registered in {@link #setupResourceSet}
+    * via {@code profileService.registerEmbeddedProfileEcorePackages()}, and the
+    * actual profile resource is loaded by EMF automatically when it encounters
+    * a {@code pathmap://} cross-reference in the .uml file's
+    * {@code <profileApplication>} element.
+    *
+    * This ensures that:
+    * - Models WITH the profile: EMF resolves the pathmap, loads the profile
+    *   resource into the ResourceSet, and StereotypePropertyProvider shows
+    *   stereotype checkboxes.
+    * - Models WITHOUT the profile: no profile resource is loaded, no stereotype
+    *   checkboxes appear.
     */
    protected void loadAndRegisterProfiles(final ResourceSet resourceSet, final URI sourceURI) {
-      LOGGER.info("Loading embedded uml-vm-profile for model: " + sourceURI);
-      try {
-         var profile = profileService.loadEmbeddedProfile(resourceSet);
-         if (profile != null) {
-            LOGGER.info("Successfully loaded embedded profile: " + profile.getName());
-         } else {
-            LOGGER.warning("Failed to load embedded uml-vm-profile — stereotype deserialization may fail");
-         }
-      } catch (Exception e) {
-         LOGGER.log(java.util.logging.Level.SEVERE, "Error loading embedded uml-vm-profile", e);
-      }
+      // No-op: Ecore packages pre-registered in setupResourceSet().
+      // EMF pathmap resolution handles on-demand profile loading.
+      LOGGER.fine("loadAndRegisterProfiles called for " + sourceURI
+            + " — Ecore packages already pre-registered, relying on pathmap resolution");
    }
 
    /**

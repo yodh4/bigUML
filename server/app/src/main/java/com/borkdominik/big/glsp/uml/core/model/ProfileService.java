@@ -89,10 +89,90 @@ public class ProfileService {
     }
 
     /**
+     * Registers the Ecore packages from the embedded uml-vm-profile into the target
+     * ResourceSet's package registry WITHOUT adding the profile resource itself.
+     *
+     * This is critical for Option B (on-demand pathmap resolution):
+     * - Ecore packages must be registered before model loading so EMF can deserialize
+     *   stereotype application EObjects without PackageNotFoundException.
+     * - But the profile resource must NOT be in the model's ResourceSet, otherwise
+     *   StereotypePropertyProvider will show stereotype checkboxes even for models
+     *   that don't use the profile.
+     *
+     * The profile is loaded into a temporary, isolated ResourceSet solely to extract
+     * its EAnnotation-embedded EPackages. The temporary ResourceSet is discarded.
+     *
+     * @param targetResourceSet The ResourceSet to register Ecore packages into
+     */
+    public void registerEmbeddedProfileEcorePackages(final ResourceSet targetResourceSet) {
+        var profileUrl = getClass().getClassLoader().getResource(EMBEDDED_PROFILE_CLASSPATH);
+        if (profileUrl == null) {
+            LOGGER.severe("Embedded uml-vm-profile not found on classpath at: " + EMBEDDED_PROFILE_CLASSPATH
+                    + " — Ecore packages will not be pre-registered");
+            return;
+        }
+
+        URI profileUri = URI.createURI(profileUrl.toString());
+
+        // Use a temporary ResourceSet so the profile resource is NOT added to the
+        // target ResourceSet. We only need the EPackages from its EAnnotations.
+        var tempResourceSet = new org.eclipse.emf.ecore.resource.impl.ResourceSetImpl();
+        try {
+            Resource tempResource = tempResourceSet.getResource(profileUri, true);
+            if (tempResource == null || tempResource.getContents().isEmpty()) {
+                LOGGER.warning("Failed to load embedded profile into temp ResourceSet: " + profileUri);
+                return;
+            }
+
+            var root = tempResource.getContents().get(0);
+            if (root instanceof Profile) {
+                Profile profile = (Profile) root;
+
+                // Extract and register Ecore packages into the TARGET ResourceSet's registry
+                // and the global registry (needed for both deserialization and runtime lookup)
+                Map<String, EPackage> selectedByNsUri = new LinkedHashMap<>();
+                for (var annotation : profile.getEAnnotations()) {
+                    if ("http://www.eclipse.org/uml2/2.0.0/UML".equals(annotation.getSource())) {
+                        for (var content : annotation.getContents()) {
+                            if (content instanceof EPackage) {
+                                var ePackage = (EPackage) content;
+                                String nsURI = ePackage.getNsURI();
+                                if (nsURI != null && !nsURI.isEmpty()) {
+                                    EPackage existing = selectedByNsUri.get(nsURI);
+                                    if (existing == null) {
+                                        selectedByNsUri.put(nsURI, ePackage);
+                                    } else {
+                                        EPackage preferred = choosePreferredPackage(profile, existing, ePackage);
+                                        if (preferred != existing) {
+                                            selectedByNsUri.put(nsURI, preferred);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for (var entry : selectedByNsUri.entrySet()) {
+                    EPackage.Registry.INSTANCE.put(entry.getKey(), entry.getValue());
+                    targetResourceSet.getPackageRegistry().put(entry.getKey(), entry.getValue());
+                }
+
+                LOGGER.info("Pre-registered " + selectedByNsUri.size()
+                        + " Ecore package(s) from embedded uml-vm-profile into target ResourceSet");
+            } else {
+                LOGGER.warning("Embedded profile classpath resource root is not a Profile: " + root.getClass());
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error pre-registering Ecore packages from embedded profile", e);
+        }
+    }
+
+    /**
      * Loads the embedded uml-vm-profile from the classpath into the given ResourceSet.
-     * This is the preferred entry point for loading the built-in profile — it resolves
-     * the JAR resource via the ClassLoader and delegates to {@link #loadProfile(URI, ResourceSet)}
-     * so all URI remapping and Ecore package registration are performed identically.
+     * This adds the profile resource to the ResourceSet, making it visible to
+     * StereotypePropertyProvider. Use this when the user explicitly opts in to the
+     * profile (e.g., during diagram creation with useVmProfile=true).
      *
      * @param resourceSet ResourceSet to load the profile into
      * @return The loaded Profile, or null if the classpath resource is missing or loading failed

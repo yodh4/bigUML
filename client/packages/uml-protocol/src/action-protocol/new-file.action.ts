@@ -17,11 +17,12 @@ export interface RequestNewFileAction extends RequestAction<NewFileResponseActio
 export namespace RequestNewFileAction {
     export const KIND = 'requestNewFile';
 
-    export function create(diagramType: string, sourceUri: string): RequestNewFileAction {
+    export function create(diagramType: string, sourceUri: string, useVmProfile?: boolean): RequestNewFileAction {
         return {
             kind: KIND,
             options: {
-                sourceUri
+                sourceUri,
+                ...(useVmProfile !== undefined && { useVmProfile: String(useVmProfile) })
             },
             diagramType,
             requestId: RequestAction.generateRequestId()

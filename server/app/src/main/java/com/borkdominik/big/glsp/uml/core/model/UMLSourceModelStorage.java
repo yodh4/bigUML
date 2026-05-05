@@ -54,7 +54,40 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
       super.setupResourceSet(resourceSet);
       resourceSet.getPackageRegistry().put(UMLPackage.eINSTANCE.getNsURI(), UMLPackage.eINSTANCE);
       resourceSet.getPackageRegistry().put(UnotationPackage.eINSTANCE.getNsURI(), UnotationPackage.eINSTANCE);
+
+      // Register pathmap URI mappings so EMF resolves embedded profile references
+      // automatically (Option B: on-demand pathmap resolution).
+      registerEmbeddedProfilePathmaps(resourceSet);
+
       return resourceSet;
+   }
+
+   /**
+    * Registers URI mappings for both pathmap prefixes used by the uml-vm-profile
+    * so that EMF's URI converter resolves them to the classpath resource.
+    * This enables reopening .uml files that already have the profile applied
+    * without needing any .profile.uml file on disk.
+    */
+   private void registerEmbeddedProfilePathmaps(final ResourceSet resourceSet) {
+      var profileUrl = getClass().getClassLoader().getResource("profiles/uml-vm-profile.profile.uml");
+      if (profileUrl == null) {
+         LOGGER.warning("Embedded uml-vm-profile not found on classpath — pathmap URIs will not be registered");
+         return;
+      }
+      var classpathUri = org.eclipse.emf.common.util.URI.createURI(profileUrl.toString());
+      var uriMap = resourceSet.getURIConverter().getURIMap();
+
+      // Canonical pathmap used by ProfileService.remapProfileResourceUri()
+      uriMap.put(
+         org.eclipse.emf.common.util.URI.createURI("pathmap://model/uml-vm-profile/uml-vm-profile.profile.uml"),
+         classpathUri
+      );
+      // Self-declared pathmap URI in the profile's own URI attribute
+      uriMap.put(
+         org.eclipse.emf.common.util.URI.createURI("pathmap://UML_PROFILES/uml-vm-profile.profile.uml"),
+         classpathUri
+      );
+      LOGGER.info("Registered embedded uml-vm-profile pathmap URIs -> " + classpathUri);
    }
 
    @Override
@@ -80,37 +113,23 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
    }
 
    /**
-    * Discovers and loads UML profiles from the model directory.
-    * This registers profile Ecore packages so EMF can deserialize stereotype
-    * application EObjects. Must be called BEFORE loading the model.
+    * Loads the embedded uml-vm-profile from the classpath and registers its
+    * Ecore packages in the ResourceSet. This replaces directory-based discovery:
+    * since this is an internal tool, only the built-in profile is needed.
+    * Must be called BEFORE loading the model so EMF can deserialize stereotype
+    * application EObjects without PackageNotFoundException.
     */
-   protected void loadAndRegisterProfiles(ResourceSet resourceSet, URI sourceURI) {
-      LOGGER.info("Attempting to load and register profiles for model URI: " + sourceURI);
+   protected void loadAndRegisterProfiles(final ResourceSet resourceSet, final URI sourceURI) {
+      LOGGER.info("Loading embedded uml-vm-profile for model: " + sourceURI);
       try {
-         var profileUris = profileService.discoverProfileUris(sourceURI);
-
-         if (profileUris.isEmpty()) {
-            LOGGER.info("No profiles found to register.");
-            return;
+         var profile = profileService.loadEmbeddedProfile(resourceSet);
+         if (profile != null) {
+            LOGGER.info("Successfully loaded embedded profile: " + profile.getName());
+         } else {
+            LOGGER.warning("Failed to load embedded uml-vm-profile — stereotype deserialization may fail");
          }
-
-         synchronized (resourceSet) {
-            for (var profileUri : profileUris) {
-               LOGGER.info("Loading profile from: " + profileUri);
-               // Load the profile (which also defines it and registers Ecore packages)
-               // Profile application to specific packages is done on-demand
-               // in StereotypePropertyProvider when stereotypes are applied
-               var profile = profileService.loadProfile(profileUri, resourceSet);
-               if (profile != null) {
-                  LOGGER.info("Successfully loaded and registered profile: " + profile.getName());
-               } else {
-                  LOGGER.warning("Failed to load profile from: " + profileUri);
-               }
-            }
-         }
-
       } catch (Exception e) {
-         LOGGER.log(java.util.logging.Level.SEVERE, "Error during profile loading/registration", e);
+         LOGGER.log(java.util.logging.Level.SEVERE, "Error loading embedded uml-vm-profile", e);
       }
    }
 
@@ -196,7 +215,29 @@ public class UMLSourceModelStorage extends BGEMFSourceModelStorage {
       diagram.setSemanticElement(semanticProxy);
       diagram.setDiagramType(action.getDiagramType());
 
+      // Check if user requested the embedded UML-VM profile
+      var options = action.getOptions();
+      boolean useVmProfile = options != null
+            && Boolean.parseBoolean(String.valueOf(options.getOrDefault("useVmProfile", "false")));
+
+      if (useVmProfile) {
+         LOGGER.info("Applying embedded uml-vm-profile to new diagram: " + resourceURI);
+         var profile = profileService.loadEmbeddedProfile(resourceSet);
+         if (profile != null) {
+            profileService.applyProfile(model, profile);
+         } else {
+            LOGGER.warning("Could not load embedded profile — diagram created without profile application");
+         }
+      }
+
       try {
+         // Always save .unotation; also save .uml when a profile was applied
+         // so that the <profileApplication> element is persisted immediately.
+         if (useVmProfile) {
+            var saveOptions = new HashMap<String, Object>();
+            saveOptions.put(XMLResource.OPTION_SCHEMA_LOCATION, Boolean.TRUE);
+            umlResource.save(saveOptions);
+         }
          unotationResource.save(null);
       } catch (IOException e) {
          throw new GLSPServerException("Failed to save file", e);

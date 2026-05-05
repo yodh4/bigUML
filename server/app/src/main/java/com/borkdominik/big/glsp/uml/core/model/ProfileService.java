@@ -43,15 +43,21 @@ public class ProfileService {
     private static final Logger LOGGER = Logger.getLogger(ProfileService.class.getName());
     private static final String PROFILE_EXTENSION = ".profile.uml";
     private static final String CANONICAL_PROFILE_PATHMAP_PREFIX = "pathmap://model/uml-vm-profile/";
+    private static final String EMBEDDED_PROFILE_CLASSPATH = "profiles/uml-vm-profile.profile.uml";
 
     private final List<Profile> loadedProfiles = new ArrayList<>();
 
     /**
      * Discovers profile files in the same directory as the model file.
-     * 
+     *
+     * @deprecated No longer called. Profile loading now uses the embedded classpath resource
+     *             via {@link #loadEmbeddedProfile(ResourceSet)}. Retained in case directory-based
+     *             discovery is needed for future multi-profile support.
+     *
      * @param modelUri URI of the UML model file
      * @return List of URIs for discovered profile files
      */
+    @Deprecated
     public List<URI> discoverProfileUris(URI modelUri) {
         List<URI> profileUris = new ArrayList<>();
 
@@ -80,6 +86,26 @@ public class ProfileService {
         }
 
         return profileUris;
+    }
+
+    /**
+     * Loads the embedded uml-vm-profile from the classpath into the given ResourceSet.
+     * This is the preferred entry point for loading the built-in profile — it resolves
+     * the JAR resource via the ClassLoader and delegates to {@link #loadProfile(URI, ResourceSet)}
+     * so all URI remapping and Ecore package registration are performed identically.
+     *
+     * @param resourceSet ResourceSet to load the profile into
+     * @return The loaded Profile, or null if the classpath resource is missing or loading failed
+     */
+    public Profile loadEmbeddedProfile(final ResourceSet resourceSet) {
+        var profileUrl = getClass().getClassLoader().getResource(EMBEDDED_PROFILE_CLASSPATH);
+        if (profileUrl == null) {
+            LOGGER.severe("Embedded uml-vm-profile not found on classpath at: " + EMBEDDED_PROFILE_CLASSPATH);
+            return null;
+        }
+        URI profileUri = URI.createURI(profileUrl.toString());
+        LOGGER.info("Loading embedded uml-vm-profile from classpath: " + profileUri);
+        return loadProfile(profileUri, resourceSet);
     }
 
     /**

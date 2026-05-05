@@ -77,18 +77,30 @@ export class NewFileCreator implements Disposable {
             }
         });
 
-        if (wizard !== undefined) {
-            await this.createUMLDiagram(rootUri, wizard.name.trim(), wizard.diagramPick.diagramType);
+        // Guard: only proceed if the wizard completed all steps.
+        // MultiStepInput always returns the state object even on cancellation, so
+        // checking `wizard !== undefined` alone is insufficient. We verify:
+        //   - wizard.name: step 1 completed
+        //   - wizard.diagramPick: step 2 completed
+        //   - wizard.useVmProfile !== undefined: step 3 completed (for CLASS) OR
+        //     explicitly set to false by pickDiagramType (for all other types)
+        if (wizard?.name && wizard?.diagramPick && wizard?.useVmProfile !== undefined) {
+            await this.createUMLDiagram(rootUri, wizard.name.trim(), wizard.diagramPick.diagramType, wizard.useVmProfile);
         }
     }
 
-    protected async createUMLDiagram(rootUri: vscode.Uri, diagramName: string, diagramType: UMLDiagramType): Promise<void> {
+    protected async createUMLDiagram(
+        rootUri: vscode.Uri,
+        diagramName: string,
+        diagramType: UMLDiagramType,
+        useVmProfile?: boolean
+    ): Promise<void> {
         const workspaceRoot = new URIJS(decodeURIComponent(this.rootDestination(rootUri)));
         const modelUri = new URIJS(workspaceRoot + '/' + this.diagramDestination(diagramName));
 
         const client = await this.session.client();
         client.sendActionMessage({
-            action: RequestNewFileAction.create(diagramType, modelUri.path()),
+            action: RequestNewFileAction.create(diagramType, modelUri.path(), useVmProfile),
             clientId: client.id
         });
         const dispose = client.onActionMessage(async message => {

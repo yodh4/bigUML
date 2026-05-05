@@ -48,7 +48,7 @@ export async function newDiagramWizard(
         return (i: MultiStepInput) => pickDiagramType(i, state);
     }
 
-    async function pickDiagramType(input: MultiStepInput, state: Partial<State>): Promise<void> {
+    async function pickDiagramType(input: MultiStepInput, state: Partial<State>): Promise<InputStep | void> {
         const items = await getAvailableDiagrams(state, undefined);
         state.diagramPick = await input.showQuickPick<DiagramTypeQuickPick>({
             title,
@@ -59,6 +59,37 @@ export async function newDiagramWizard(
             activeItem: undefined,
             shouldResume
         });
+
+        // For CLASS diagrams, show an additional step to ask about the built-in profile
+        if (state.diagramPick.diagramType === 'CLASS') {
+            return (i: MultiStepInput) => pickProfileUsage(i, state);
+        }
+        // For all other diagram types the wizard ends here
+        state.useVmProfile = false;
+    }
+
+    async function pickProfileUsage(input: MultiStepInput, state: Partial<State>): Promise<void> {
+        const pick = await input.showQuickPick<QuickPickItem & { value: boolean }>({
+            title,
+            step: 3,
+            totalSteps: 3,
+            placeholder: 'Do you want to use the built-in UML-VM profile?',
+            items: [
+                {
+                    label: '$(check) Yes — Use UML-VM Profile',
+                    description: 'Enables delta modeling stereotypes (module, delta, vm, …)',
+                    value: true
+                },
+                {
+                    label: '$(circle-slash) No — Plain Class Diagram',
+                    description: 'No profile applied',
+                    value: false
+                }
+            ],
+            activeItem: undefined,
+            shouldResume
+        });
+        state.useVmProfile = pick.value;
     }
 
     function shouldResume(): Promise<boolean> {
@@ -87,6 +118,8 @@ interface State {
     totalSteps: number;
     name: string;
     diagramPick: DiagramTypeQuickPick;
+    /** Only populated for CLASS diagrams; true if the user opted into the UML-VM profile. */
+    useVmProfile?: boolean;
 }
 
 class InputFlowAction {
